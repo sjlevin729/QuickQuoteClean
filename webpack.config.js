@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   mode: 'production', // Change back to production for deployment
-  entry: './src/index-simple.js',
+  entry: './src/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
@@ -26,7 +26,7 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './public/index-simple.html',
+      template: './public/index.html',
       filename: 'index.html',
       inject: 'body' // Explicitly inject scripts into body
     })
