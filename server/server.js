@@ -33,13 +33,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files from public directory first (for favicons, etc.)
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Add content type middleware to ensure JavaScript files are served with the correct MIME type
+app.use((req, res, next) => {
+  if (req.url.endsWith('.js')) {
+    res.setHeader('Content-Type', 'application/javascript');
+  }
+  next();
+});
 
-// In production, also serve from the dist directory
+// In production, serve from the dist directory first (for bundle.js and other webpack outputs)
 if (process.env.NODE_ENV === 'production') {
+  console.log('Serving static files from dist directory');
   app.use(express.static(path.join(__dirname, '..', 'dist')));
 }
+
+// Then serve static files from public directory (for other static assets)
+console.log('Serving static files from public directory');
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Configure multer for image uploads (memory storage for OpenAI processing)
 const imageStorage = multer.memoryStorage();

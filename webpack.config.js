@@ -2,12 +2,12 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  mode: 'development', // Change to development for better debugging
+  mode: 'production', // Change back to production for deployment
   entry: './src/index-simple.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
-    publicPath: './' // Change from '/' to './' for relative paths
+    publicPath: '' // Empty string for relative paths
   },
   module: {
     rules: [
@@ -26,9 +26,9 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './public/index.html',
+      template: './public/index-simple.html',
       filename: 'index.html',
-      inject: true // Ensure scripts are injected
+      inject: 'body' // Explicitly inject scripts into body
     })
   ],
   devServer: {
