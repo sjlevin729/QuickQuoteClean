@@ -19,9 +19,20 @@ const openai = new OpenAI({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Add CORS headers for SharedArrayBuffer support
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  next();
+});
 
 // Configure multer for image uploads (memory storage for OpenAI processing)
 const imageStorage = multer.memoryStorage();
@@ -324,19 +335,34 @@ if (process.env.NODE_ENV === 'production') {
     const indexPath = path.join(distPath, 'index.html');
     if (fs.existsSync(indexPath)) {
       console.log('index.html exists in dist directory');
+      console.log('Contents of dist directory:');
+      const files = fs.readdirSync(distPath);
+      console.log(files);
     } else {
       console.log('WARNING: index.html does not exist in dist directory');
     }
   } else {
     console.log('WARNING: Dist directory does not exist');
+    // Try to create it
+    try {
+      fs.mkdirSync(distPath, { recursive: true });
+      console.log('Created dist directory');
+    } catch (error) {
+      console.error('Error creating dist directory:', error);
+    }
   }
   
+  // Serve static files
   app.use(express.static(distPath));
   
   // Handle React routing, return all requests to React app
   app.get('*', (req, res) => {
     console.log('Serving index.html for path:', req.path);
-    res.sendFile(path.join(distPath, 'index.html'));
+    if (fs.existsSync(path.join(distPath, 'index.html'))) {
+      res.sendFile(path.join(distPath, 'index.html'));
+    } else {
+      res.status(404).send('index.html not found in dist directory');
+    }
   });
 }
 
