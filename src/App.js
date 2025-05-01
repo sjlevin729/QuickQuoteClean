@@ -355,351 +355,218 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Header */}
       <header className="app-header">
-        <div className="container">
-          <div className="row align-items-center">
-            <div className="col">
-              <h1 className="brand">QuickQuote</h1>
-              <p className="tagline">Instant cleaning quotes from your videos</p>
+        <div className="header-content">
+          <div className="brand">QuickQuoteClean</div>
+          <div className="contact-info">
+            <div className="contact-item">
+              <i className="bi bi-telephone"></i>
+              +447539412914
             </div>
-            <div className="col-auto d-none d-md-block">
-              <div className="header-contact">
-                <a href="tel:+442012345678" className="text-white me-3">
-                  <i className="bi bi-telephone-fill me-1"></i> +44 (0)20 1234 5678
-                </a>
-                <a href="mailto:info@quickquote.com" className="text-white">
-                  <i className="bi bi-envelope-fill me-1"></i> info@quickquote.com
-                </a>
-              </div>
+            <div className="contact-item">
+              <i className="bi bi-envelope"></i>
+              quickquoteclean@gmail.com
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mt-4">
-        <div className="row">
-          <div className="col-lg-8 offset-lg-2">
-            <div className="card main-card">
-              <div className="card-body">
-                <h2 className="card-title text-center mb-4">Get Your Cleaning Quote</h2>
-                
-                {!loaded ? (
-                  <div className="text-center p-5">
-                    <div className="spinner-border" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                    <p className="mt-3">Initializing video analyzer...</p>
-                  </div>
-                ) : (
-                  <>
-                    {!video && (
-                      <>
-                        <div className="how-it-works mb-4">
-                          <h3 className="section-title">How It Works</h3>
-                          <div className="row text-center g-3">
-                            <div className="col-md-4">
-                              <div className="step-card">
-                                <div className="step-number">1</div>
-                                <div className="step-icon">
-                                  <i className="bi bi-camera-video-fill"></i>
-                                </div>
-                                <h4>Upload Video</h4>
-                                <p>Upload a video of the space you need cleaned</p>
-                              </div>
-                            </div>
-                            <div className="col-md-4">
-                              <div className="step-card">
-                                <div className="step-number">2</div>
-                                <div className="step-icon">
-                                  <i className="bi bi-magic"></i>
-                                </div>
-                                <h4>AI Analysis</h4>
-                                <p>Our AI analyzes your space in detail</p>
-                              </div>
-                            </div>
-                            <div className="col-md-4">
-                              <div className="step-card">
-                                <div className="step-number">3</div>
-                                <div className="step-icon">
-                                  <i className="bi bi-receipt"></i>
-                                </div>
-                                <h4>Get Quote</h4>
-                                <p>Receive a detailed cleaning quote instantly</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div 
-                          className={`upload-container ${isDragging ? 'active' : ''}`}
-                          onClick={() => uploadRef.current.click()}
-                          onDragEnter={handleDragEnter}
-                          onDragLeave={handleDragLeave}
-                          onDragOver={handleDragOver}
-                          onDrop={handleDrop}
-                        >
-                          <input 
-                            type="file" 
-                            ref={uploadRef}
-                            onChange={handleUpload} 
-                            accept="video/*" 
-                            style={{ display: 'none' }} 
-                          />
-                          <div className="upload-icon">
-                            <i className="bi bi-cloud-arrow-up"></i>
-                          </div>
-                          <h3>Upload a Video of Your Space</h3>
-                          <p>Drag & drop here or click to browse</p>
-                          <p className="upload-info">
-                            We'll analyze your video and provide an instant cleaning quote
-                          </p>
-                          <div className="upload-formats mt-3">
-                            <small>Supported formats: MP4, MOV, AVI, WEBM (Max 100MB)</small>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                    {videoUrl && !processing && !analysis && (
-                      <div className="video-preview-container">
-                        <div className="row g-4">
-                          <div className="col-lg-8">
-                            <div className="video-card">
-                              <h3 className="video-title">Video Preview</h3>
-                              <div className="video-wrapper">
-                                <video 
-                                  className="video-preview" 
-                                  src={videoUrl} 
-                                  controls
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <div className="col-lg-4">
-                            <div className="video-info-panel">
-                              <div className="info-panel-content">
-                                <div className="info-icon">
-                                  <i className="bi bi-check-circle-fill"></i>
-                                </div>
-                                <h4>Ready to Analyze</h4>
-                                <p>Click the button below to analyze your video and get an instant cleaning quote.</p>
-                                <div className="action-buttons">
-                                  <button 
-                                    className="btn btn-primary btn-lg w-100" 
-                                    onClick={processVideoAndGetQuote} 
-                                    disabled={processing}
-                                  >
-                                    <i className="bi bi-magic me-2"></i>
-                                    Get Cleaning Quote
-                                  </button>
-                                  <button 
-                                    className="btn btn-outline-secondary w-100 mt-3" 
-                                    onClick={resetApp}
-                                  >
-                                    <i className="bi bi-x-circle me-2"></i>
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {processing && (
-                      <div className="processing-container text-center p-5">
-                        <div className="progress-container mb-4">
-                          <div className="progress" style={{ height: '25px' }}>
-                            <div 
-                              className="progress-bar progress-bar-striped progress-bar-animated" 
-                              role="progressbar" 
-                              style={{ width: `${progress}%` }} 
-                              aria-valuenow={progress} 
-                              aria-valuemin="0" 
-                              aria-valuemax="100"
-                            >
-                              {progress}%
-                            </div>
-                          </div>
-                          <p className="mt-2">{processingStep}</p>
-                        </div>
-                        <div className="processing-animation">
-                          <CleaningAnimation />
-                        </div>
-                        <h3 className="mt-4">Analyzing Your Video</h3>
-                        <p className="text-muted">
-                          Our AI is examining your space to provide an accurate cleaning quote.
-                          This may take a moment depending on the video length.
-                        </p>
-                      </div>
-                    )}
-
-                    {message && (
-                      <div className={`alert alert-${messageType} mt-3`} role="alert">
-                        {message}
-                      </div>
-                    )}
-
-                    {analysis && (
-                      <div className="analysis-result">
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                          <h3 className="mb-0">Your Cleaning Quote</h3>
-                          <button 
-                            className="btn btn-outline-secondary" 
-                            onClick={resetApp}
-                          >
-                            Start Over
-                          </button>
-                        </div>
-                        <div className="card quote-card">
-                          <div className="card-header">
-                            <div className="d-flex justify-content-between align-items-center">
-                              <h4 className="mb-0">Quote #{quoteId}</h4>
-                              <span className="badge bg-success">Ready to Book</span>
-                            </div>
-                          </div>
-                          <div className="card-body quote-content">
-                            <pre className="analysis-text">{analysis}</pre>
-                          </div>
-                          <div className="card-footer">
-                            <div className="d-flex justify-content-between align-items-center">
-                              <div>
-                                <small className="text-muted">Generated on {new Date().toLocaleDateString()}</small>
-                              </div>
-                              <button 
-                                className="btn btn-primary" 
-                                onClick={() => setShowUserForm(true)}
-                              >
-                                <i className="bi bi-calendar-check me-2"></i>
-                                Book This Cleaning
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-4 text-center">
-                          <p className="text-muted">
-                            Need to discuss this quote? Contact us at:
-                          </p>
-                          <div className="contact-info">
-                            <p><strong>Email:</strong> bookings@quickquote.com</p>
-                            <p><strong>Phone:</strong> +44 (0)20 1234 5678</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {showUserForm && (
-                      <div className="user-info-form">
-                        <h3 className="mb-3">Book Your Cleaning Service</h3>
-                        <form onSubmit={saveQuoteInfo}>
-                          <div className="mb-3">
-                            <label className="form-label" htmlFor="name">Name:</label>
-                            <input 
-                              type="text" 
-                              id="name" 
-                              name="name" 
-                              className="form-control" 
-                              value={userInfo.name} 
-                              onChange={handleUserInfoChange}
-                            />
-                          </div>
-                          <div className="mb-3">
-                            <label className="form-label" htmlFor="email">Email:</label>
-                            <input 
-                              type="email" 
-                              id="email" 
-                              name="email" 
-                              className="form-control" 
-                              value={userInfo.email} 
-                              onChange={handleUserInfoChange}
-                            />
-                          </div>
-                          <div className="mb-3">
-                            <label className="form-label" htmlFor="phone">Phone:</label>
-                            <input 
-                              type="tel" 
-                              id="phone" 
-                              name="phone" 
-                              className="form-control" 
-                              value={userInfo.phone} 
-                              onChange={handleUserInfoChange}
-                            />
-                          </div>
-                          <div className="mb-3">
-                            <label className="form-label" htmlFor="address">Address:</label>
-                            <textarea 
-                              id="address" 
-                              name="address" 
-                              className="form-control" 
-                              value={userInfo.address} 
-                              onChange={handleUserInfoChange}
-                            />
-                          </div>
-                          <div className="mb-3">
-                            <label className="form-label" htmlFor="notes">Additional Notes:</label>
-                            <textarea 
-                              id="notes" 
-                              name="notes" 
-                              className="form-control" 
-                              value={userInfo.notes} 
-                              onChange={handleUserInfoChange}
-                            />
-                          </div>
-                          <div className="d-flex justify-content-between">
-                            <button 
-                              className="btn btn-primary" 
-                              type="submit"
-                            >
-                              Save Quote
-                            </button>
-                            <button 
-                              className="btn btn-outline-secondary" 
-                              onClick={() => setShowUserForm(false)}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    )}
-                    {showThankYouModal && (
-                      <div className="thank-you-modal">
-                        <div className="thank-you-content">
-                          <div className="thank-you-icon">
-                            <i className="bi bi-check-circle-fill"></i>
-                          </div>
-                          <h3>Thank You!</h3>
-                          <p>Your cleaning quote has been saved successfully.</p>
-                          <p>The cleaning company will be in touch shortly to plan your cleaning service.</p>
-                          <p className="quote-reference">Quote Reference: {quoteId}</p>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+      {/* Hero Section */}
+      <section className="hero-section">
+        <div className="hero-content">
+          <h1 className="hero-title">Instant Cleaning Quotes with AI</h1>
+          <p className="hero-subtitle">Upload a video of your space and get a detailed cleaning quote in minutes</p>
         </div>
+      </section>
+
+      {/* Main Content */}
+      <main className="main-content">
+        <h2 className="section-title">Get Your Cleaning Quote</h2>
+        <p className="section-subtitle">Simply upload a video of the space you need cleaned, and our AI will analyze it to provide a detailed quote</p>
+
+        {/* Message Display */}
+        {message && (
+          <div className={`message message-${messageType}`}>
+            {message}
+          </div>
+        )}
+
+        {/* Upload Section */}
+        {!processing && !analysis && (
+          <section className="upload-section">
+            <div
+              className={`upload-container ${isDragging ? 'dragging' : ''}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type.startsWith('video/')) {
+                  handleUpload(e);
+                } else {
+                  setMessage('Please drop a valid video file.');
+                  setMessageType('warning');
+                }
+              }}
+              onClick={() => uploadRef.current.click()}
+            >
+              <div className="upload-icon">
+                <i className="bi bi-cloud-arrow-up"></i>
+              </div>
+              <h3 className="upload-text">Upload a Video</h3>
+              <p className="upload-subtext">Click or drag and drop your video here</p>
+              <p className="upload-subtext">Supported formats: MP4, MOV, AVI (Max 100MB)</p>
+              <input
+                type="file"
+                ref={uploadRef}
+                onChange={(e) => {
+                  if (e.target.files.length > 0) {
+                    handleUpload(e);
+                  }
+                }}
+                accept="video/*"
+                style={{ display: 'none' }}
+              />
+            </div>
+          </section>
+        )}
+
+        {/* Processing Section */}
+        {processing && (
+          <section className="processing-section">
+            <h3 className="section-title">Processing Your Video</h3>
+            <div className="progress-container">
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+              </div>
+              <div className="progress-text">{progress}% Complete</div>
+            </div>
+            <div className="processing-step">{processingStep}</div>
+            <CleaningAnimation />
+          </section>
+        )}
+
+        {/* Results Section */}
+        {analysis && !showUserForm && (
+          <section className="results-section">
+            <h3 className="section-title">Your Cleaning Quote</h3>
+            <div className="analysis-container">
+              <pre className="analysis-text">{analysis}</pre>
+            </div>
+            <div className="text-center mt-4">
+              <button className="btn btn-primary" onClick={() => setShowUserForm(true)}>
+                Request This Quote
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* User Form Section */}
+        {showUserForm && (
+          <section className="user-form-section">
+            <h3 className="section-title">Complete Your Quote Request</h3>
+            <form onSubmit={saveQuoteInfo}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="name">Full Name</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="name"
+                  value={userInfo.name}
+                  onChange={(e) => setUserInfo({...userInfo, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="email">Email Address</label>
+                <input
+                  type="email"
+                  className="form-control"
+                  id="email"
+                  value={userInfo.email}
+                  onChange={(e) => setUserInfo({...userInfo, email: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="phone">Phone Number</label>
+                <input
+                  type="tel"
+                  className="form-control"
+                  id="phone"
+                  value={userInfo.phone}
+                  onChange={(e) => setUserInfo({...userInfo, phone: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="address">Address</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="address"
+                  value={userInfo.address}
+                  onChange={(e) => setUserInfo({...userInfo, address: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="notes">Additional Notes</label>
+                <textarea
+                  className="form-control"
+                  id="notes"
+                  rows="4"
+                  value={userInfo.notes}
+                  onChange={(e) => setUserInfo({...userInfo, notes: e.target.value})}
+                ></textarea>
+              </div>
+              <div className="text-center">
+                <button type="submit" className="btn btn-primary">Submit Request</button>
+              </div>
+            </form>
+          </section>
+        )}
       </main>
 
-      <footer className="app-footer mt-5">
-        <div className="container">
-          <div className="row">
-            <div className="col-md-6">
-              <h3>QuickQuote</h3>
-              <p>Instant AI-powered cleaning quotes from your videos</p>
+      {/* Footer */}
+      <footer className="app-footer">
+        <div className="footer-content">
+          <div className="footer-logo">QuickQuoteClean</div>
+          <div className="footer-contact">
+            <div className="footer-contact-item">
+              <i className="bi bi-telephone"></i> +447539412914
             </div>
-            <div className="col-md-6 text-md-end">
-              <p>&copy; {new Date().getFullYear()} QuickQuote Ltd. All rights reserved.</p>
-              <p>
-                <a href="/admin" className="text-white text-decoration-none">
-                  <i className="bi bi-shield-lock me-1"></i>
-                  Admin Portal
-                </a>
-              </p>
+            <div className="footer-contact-item">
+              <i className="bi bi-envelope"></i> quickquoteclean@gmail.com
             </div>
           </div>
         </div>
+        <div className="copyright">
+          &copy; {new Date().getFullYear()} QuickQuoteClean. All rights reserved.
+        </div>
       </footer>
+
+      {/* Thank You Modal */}
+      {showThankYouModal && (
+        <div className="modal-backdrop thank-you-modal">
+          <div className="modal-content">
+            <div className="thank-you-icon">
+              <i className="bi bi-check-circle"></i>
+            </div>
+            <h3 className="thank-you-title">Thank You!</h3>
+            <p className="thank-you-message">Your quote request has been submitted successfully. We'll contact you shortly.</p>
+            {quoteId && (
+              <p className="thank-you-message">Reference: {quoteId}</p>
+            )}
+            <button className="btn btn-primary" onClick={() => window.location.reload()}>Get Another Quote</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
