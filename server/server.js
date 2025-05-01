@@ -13,11 +13,6 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Check if OpenAI API key is configured
-if (!process.env.OPENAI_API_KEY) {
-  console.error('WARNING: OPENAI_API_KEY environment variable is not set. API calls will fail.');
-}
-
 // Configure OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -67,19 +62,6 @@ if (!fs.existsSync(uploadsDir)) {
 // API endpoint for analyzing images
 app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res) => {
   try {
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ 
-        error: 'OpenAI API key is not configured. Please add it to your environment variables.',
-        missingApiKey: true
-      });
-    }
-
-    // Check if files were uploaded
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No images were uploaded' });
-    }
-
     // Sort images by name to ensure they're in the correct order
     const sortedImages = req.files.sort((a, b) => {
       const nameA = a.originalname;
@@ -132,16 +114,7 @@ If the images do not show a space that needs cleaning (e.g., it's not a room, of
     res.json({ analysis: response.choices[0].message.content });
   } catch (error) {
     console.error('Error analyzing images:', error);
-    
-    // Provide more specific error messages
-    if (error.message.includes('API key')) {
-      res.status(500).json({ 
-        error: 'Invalid or missing OpenAI API key. Please check your environment variables.',
-        missingApiKey: true
-      });
-    } else {
-      res.status(500).json({ error: error.message });
-    }
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -351,6 +324,5 @@ if (process.env.NODE_ENV === 'production') {
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${port}`);
-  console.log(`OpenAI API key ${process.env.OPENAI_API_KEY ? 'is configured' : 'is NOT configured - API calls will fail'}`);
+  console.log(`Server running on port ${port}`);
 });

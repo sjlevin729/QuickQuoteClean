@@ -10,9 +10,7 @@ const ffmpeg = createFFmpeg({
 });
 
 // API endpoint for image analysis
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/.netlify/functions/api/api/analyze-images' 
-  : '/api/analyze-images';
+const API_URL = '/api/analyze-images';
 
 function App() {
   const [loaded, setLoaded] = useState(false);
@@ -231,14 +229,7 @@ function App() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        
-        // Check if the error is related to the API key
-        if (errorData.missingApiKey) {
-          throw new Error('OpenAI API key is missing or invalid. Please contact the administrator to fix this issue.');
-        }
-        
-        throw new Error(`Server responded with ${response.status}: ${errorData.error || response.statusText}`);
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
