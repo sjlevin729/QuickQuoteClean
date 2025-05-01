@@ -40,6 +40,33 @@ function App() {
   const [showThankYouModal, setShowThankYouModal] = useState(false);
   const [cleaningContext, setCleaningContext] = useState('');
   const [duration, setDuration] = useState(0);
+  const [cleaningServices, setCleaningServices] = useState({
+    generalCleaning: true,
+    deepCleaning: false,
+    vacuuming: true,
+    mopping: true,
+    dusting: true,
+    kitchenCleaning: true,
+    bathroomCleaning: true,
+    windowCleaning: false,
+    applianceCleaning: false,
+    decluttering: false,
+    laundry: false,
+    dishwashing: false,
+    carpetCleaning: false,
+    upholsteryCleaning: false,
+    wallCleaning: false,
+    ceilingCleaning: false
+  });
+
+  // Handle checkbox change
+  const handleServiceChange = (e) => {
+    const { name, checked } = e.target;
+    setCleaningServices(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+  };
 
   // Load FFmpeg on component mount
   useEffect(() => {
@@ -137,9 +164,16 @@ function App() {
         formData.append('context', cleaningContext);
       }
       
+      // Add selected cleaning services to the request
+      formData.append('services', JSON.stringify(cleaningServices));
+      
       // Log the request details
       console.log('Sending API request to:', API_URL);
       console.log('With context:', cleaningContext ? 'Yes' : 'No');
+      console.log('Selected services:', Object.entries(cleaningServices)
+        .filter(([_, selected]) => selected)
+        .map(([service]) => service)
+        .join(', '));
       
       const response = await fetch(API_URL, {
         method: 'POST',
@@ -532,6 +566,174 @@ function App() {
                       onChange={(e) => setCleaningContext(e.target.value)}
                     ></textarea>
                     <p className="context-helper">This information will help our AI provide a more accurate quote.</p>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="context-label" htmlFor="cleaning-services">
+                      Select Cleaning Services
+                    </label>
+                    <div className="checkbox-group">
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="general-cleaning"
+                          name="generalCleaning"
+                          checked={cleaningServices.generalCleaning}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="general-cleaning">General Cleaning</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="deep-cleaning"
+                          name="deepCleaning"
+                          checked={cleaningServices.deepCleaning}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="deep-cleaning">Deep Cleaning</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="vacuuming"
+                          name="vacuuming"
+                          checked={cleaningServices.vacuuming}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="vacuuming">Vacuuming</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="mopping"
+                          name="mopping"
+                          checked={cleaningServices.mopping}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="mopping">Mopping</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="dusting"
+                          name="dusting"
+                          checked={cleaningServices.dusting}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="dusting">Dusting</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="kitchen-cleaning"
+                          name="kitchenCleaning"
+                          checked={cleaningServices.kitchenCleaning}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="kitchen-cleaning">Kitchen Cleaning</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="bathroom-cleaning"
+                          name="bathroomCleaning"
+                          checked={cleaningServices.bathroomCleaning}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="bathroom-cleaning">Bathroom Cleaning</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="window-cleaning"
+                          name="windowCleaning"
+                          checked={cleaningServices.windowCleaning}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="window-cleaning">Window Cleaning</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="appliance-cleaning"
+                          name="applianceCleaning"
+                          checked={cleaningServices.applianceCleaning}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="appliance-cleaning">Appliance Cleaning</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="decluttering"
+                          name="decluttering"
+                          checked={cleaningServices.decluttering}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="decluttering">Decluttering</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="laundry"
+                          name="laundry"
+                          checked={cleaningServices.laundry}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="laundry">Laundry</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="dishwashing"
+                          name="dishwashing"
+                          checked={cleaningServices.dishwashing}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="dishwashing">Dishwashing</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="carpet-cleaning"
+                          name="carpetCleaning"
+                          checked={cleaningServices.carpetCleaning}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="carpet-cleaning">Carpet Cleaning</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="upholstery-cleaning"
+                          name="upholsteryCleaning"
+                          checked={cleaningServices.upholsteryCleaning}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="upholstery-cleaning">Upholstery Cleaning</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="wall-cleaning"
+                          name="wallCleaning"
+                          checked={cleaningServices.wallCleaning}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="wall-cleaning">Wall Cleaning</label>
+                      </div>
+                      <div className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          id="ceiling-cleaning"
+                          name="ceilingCleaning"
+                          checked={cleaningServices.ceilingCleaning}
+                          onChange={handleServiceChange}
+                        />
+                        <label className="checkbox-label" htmlFor="ceiling-cleaning">Ceiling Cleaning</label>
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="action-buttons">
