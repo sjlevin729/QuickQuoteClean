@@ -146,21 +146,25 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
     });
 
     // Construct the prompt with cleaning context if provided
-    let promptText = "You are a professional cleaning service estimator. Analyze these images of a space and provide a detailed cleaning quote. Include:";
-    promptText += "\n1. A breakdown of all areas that need cleaning";
-    promptText += "\n2. Specific cleaning tasks required for each area";
-    promptText += "\n3. Estimated time for each task";
-    promptText += "\n4. Materials and equipment needed";
-    promptText += "\n5. Total cost estimate (in GBP £) with a breakdown";
+    let promptText = "You are a professional cleaning service estimator. Create a cleaning quote based on these images that will be shown directly to the customer. Follow these guidelines:";
     
-    // Add cleaning context to the prompt if provided
-    if (cleaningContext) {
-      promptText += `\n\nAdditional context from the customer: ${cleaningContext}`;
-      promptText += "\nPlease take this information into account when creating your quote.";
-    }
+    promptText += "\n\n1. Start with a brief, tactful summary of the space shown in the video, including its type, size, and condition. Do not use language that could offend the customer about their living arrangements.";
     
-    promptText += "\n\nFormat your response professionally as a cleaning quote with clear sections and pricing.";
-
+    promptText += "\n\n2. If the customer provided additional context with their video, incorporate this information in your summary. The customer context is: " + (cleaningContext || "No additional context provided");
+    
+    promptText += "\n\n3. List each cleaning activity that would be undertaken with a specific time allocation for each task.";
+    
+    promptText += "\n\n4. End with a total time calculation and the final price quote using a fixed rate of £15 per hour.";
+    
+    promptText += "\n\nIMPORTANT FORMATTING RULES:";
+    promptText += "\n- Do NOT include any introduction or sign-off";
+    promptText += "\n- Do NOT mention that this was created by AI";
+    promptText += "\n- Do NOT use markdown formatting like '#', '*', or '**'";
+    promptText += "\n- Use plain text formatting only";
+    promptText += "\n- Use simple line breaks and spacing for organization";
+    promptText += "\n- Start directly with the space summary";
+    promptText += "\n- Use a clean, professional presentation suitable for a customer";
+    
     console.log('Sending request to OpenAI API...');
     
     // Call OpenAI API

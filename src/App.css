@@ -210,18 +210,59 @@ body {
 
 /* Results Section */
 .results-section {
+  margin-bottom: 3rem;
+}
+
+.analysis-container {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 2rem;
-  margin-bottom: 2rem;
+  margin-top: 1.5rem;
 }
 
-.analysis-container {
-  background-color: var(--gray-100);
-  border-radius: 8px;
-  padding: 1.5rem;
-  white-space: pre-wrap;
+.analysis-text {
+  white-space: pre-line;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--gray-800);
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  overflow-wrap: break-word;
+}
+
+.quote-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.quote-section {
+  margin-bottom: 1.5rem;
+}
+
+.quote-section-title {
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 0.75rem;
+}
+
+.quote-total {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.quote-id {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: var(--gray-600);
+  text-align: right;
 }
 
 /* User Form */

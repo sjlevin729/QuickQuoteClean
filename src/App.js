@@ -158,7 +158,19 @@ function App() {
         throw new Error(data.error);
       }
       
-      setAnalysis(data.analysis);
+      // Format the analysis text for better display
+      let formattedAnalysis = data.analysis;
+      
+      // Remove any remaining markdown formatting
+      formattedAnalysis = formattedAnalysis.replace(/#{1,6}\s/g, ''); // Remove headings
+      formattedAnalysis = formattedAnalysis.replace(/\*\*/g, ''); // Remove bold
+      formattedAnalysis = formattedAnalysis.replace(/\*/g, ''); // Remove italic
+      formattedAnalysis = formattedAnalysis.replace(/`/g, ''); // Remove code formatting
+      
+      // Convert markdown-style lists to plain text with proper spacing
+      formattedAnalysis = formattedAnalysis.replace(/^\s*[-*]\s/gm, '• '); // Convert list markers
+      
+      setAnalysis(formattedAnalysis);
       setQuoteId(data.quoteId || `QQ${Math.floor(Math.random() * 10000)}`);
       setProcessing(false);
       setProgress(100);
