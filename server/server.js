@@ -25,7 +25,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Add CORS headers for SharedArrayBuffer support
 app.use((req, res, next) => {
@@ -33,6 +32,14 @@ app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
   next();
 });
+
+// Serve static files from public directory first (for favicons, etc.)
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// In production, also serve from the dist directory
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '..', 'dist')));
+}
 
 // Configure multer for image uploads (memory storage for OpenAI processing)
 const imageStorage = multer.memoryStorage();
@@ -328,46 +335,11 @@ app.get('/test', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'test.html'));
 });
 
-// Serve static files from the React app in production
+// Handle React routing in production, return all requests to React app
 if (process.env.NODE_ENV === 'production') {
-  const distPath = path.join(__dirname, '..', 'dist');
-  console.log('Serving static files from:', distPath);
-  
-  // Check if dist directory exists
-  if (fs.existsSync(distPath)) {
-    console.log('Dist directory exists');
-    // Check if index.html exists
-    const indexPath = path.join(distPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      console.log('index.html exists in dist directory');
-      console.log('Contents of dist directory:');
-      const files = fs.readdirSync(distPath);
-      console.log(files);
-    } else {
-      console.log('WARNING: index.html does not exist in dist directory');
-    }
-  } else {
-    console.log('WARNING: Dist directory does not exist');
-    // Try to create it
-    try {
-      fs.mkdirSync(distPath, { recursive: true });
-      console.log('Created dist directory');
-    } catch (error) {
-      console.error('Error creating dist directory:', error);
-    }
-  }
-  
-  // Serve static files
-  app.use(express.static(distPath));
-  
-  // Handle React routing, return all requests to React app
   app.get('*', (req, res) => {
     console.log('Serving index.html for path:', req.path);
-    if (fs.existsSync(path.join(distPath, 'index.html'))) {
-      res.sendFile(path.join(distPath, 'index.html'));
-    } else {
-      res.status(404).send('index.html not found in dist directory');
-    }
+    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
   });
 }
 
