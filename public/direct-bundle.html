@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickQuote - Direct Bundle Test</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    #error-container {
+      color: red;
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid red;
+      border-radius: 4px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QuickQuote - Direct Bundle Test</h1>
+    <p>This page attempts to load the bundle.js file directly.</p>
+    <p>Check the browser console for any errors.</p>
+    <div id="root"></div>
+    <div id="error-container"></div>
+  </div>
+
+  <script>
+    // Error handling for script loading
+    window.onerror = function(message, source, lineno, colno, error) {
+      const errorContainer = document.getElementById('error-container');
+      errorContainer.style.display = 'block';
+      errorContainer.innerHTML = `<strong>Error loading bundle.js:</strong><br>${message}<br>Source: ${source}<br>Line: ${lineno}, Column: ${colno}`;
+      console.error('Error loading bundle.js:', message, source, lineno, colno, error);
+      return true;
+    };
+
+    // Create script element to load bundle.js
+    const script = document.createElement('script');
+    script.src = '../dist/bundle.js'; // Relative path to bundle.js
+    script.type = 'text/javascript';
+    script.onerror = function(error) {
+      const errorContainer = document.getElementById('error-container');
+      errorContainer.style.display = 'block';
+      errorContainer.innerHTML = `<strong>Failed to load bundle.js</strong><br>Make sure the file exists and is accessible.`;
+      console.error('Failed to load bundle.js:', error);
+    };
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>
