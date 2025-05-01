@@ -323,6 +323,11 @@ app.put('/api/quotes/:id/user', express.json(), async (req, res) => {
   }
 });
 
+// Add a test route to verify the server is working
+app.get('/test', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'test.html'));
+});
+
 // Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, '..', 'dist');
