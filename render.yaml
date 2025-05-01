@@ -2,7 +2,7 @@ services:
   - type: web
     name: quickquote
     env: node
-    buildCommand: npm install && npm run build
+    buildCommand: mkdir -p uploads/videos && mkdir -p data && npm install && npm run build
     startCommand: npm run start-prod
     envVars:
       - key: NODE_ENV
