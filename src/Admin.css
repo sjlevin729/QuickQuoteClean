@@ -1,0 +1,163 @@
+.admin-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.admin-header {
+  background-color: #1e3a8a;
+  color: white;
+  padding: 1.5rem 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.admin-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.admin-header p {
+  margin-bottom: 0;
+  opacity: 0.9;
+}
+
+.quote-list {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.quote-list-item {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.quote-list-item:hover {
+  background-color: #f8f9fa;
+}
+
+.quote-list-item.active {
+  background-color: #e7f0ff;
+  border-left: 4px solid #1e3a8a;
+}
+
+.quote-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.quote-id {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1e3a8a;
+}
+
+.quote-date {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.quote-list-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.customer-name, .customer-email {
+  font-size: 0.9rem;
+  margin: 0;
+  color: #495057;
+}
+
+.video-badge {
+  display: inline-block;
+  background-color: #1e3a8a;
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+.quote-details {
+  height: 100%;
+}
+
+.quote-content {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.quote-text {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #333;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.quote-edit-textarea {
+  font-family: inherit;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+.video-container {
+  width: 100%;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.quote-video {
+  width: 100%;
+  max-height: 300px;
+  display: block;
+}
+
+.video-url-display {
+  font-size: 0.85rem;
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.video-url-display a {
+  color: #1e3a8a;
+  text-decoration: none;
+}
+
+.video-url-display a:hover {
+  text-decoration: underline;
+}
+
+.btn-group .btn {
+  margin-left: 5px;
+}
+
+.admin-footer {
+  background-color: #343a40;
+  color: white;
+  padding: 1.5rem 0;
+  margin-top: auto;
+}
+
+.admin-footer a {
+  color: white;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.admin-footer a:hover {
+  opacity: 0.8;
+}

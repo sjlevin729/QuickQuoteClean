@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: quickquote
+    env: node
+    buildCommand: chmod +x render-build.sh && ./render-build.sh
+    startCommand: npm run start-prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: OPENAI_API_KEY
+        sync: false
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/uploads
+      sizeGB: 1
