@@ -2,6 +2,9 @@
   "name": "video-to-images",
   "version": "1.0.0",
   "main": "index.js",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "webpack serve --mode development --open",
     "build": "webpack --mode production",
