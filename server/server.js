@@ -314,11 +314,29 @@ app.put('/api/quotes/:id/user', express.json(), async (req, res) => {
 
 // Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '..', 'dist')));
+  const distPath = path.join(__dirname, '..', 'dist');
+  console.log('Serving static files from:', distPath);
+  
+  // Check if dist directory exists
+  if (fs.existsSync(distPath)) {
+    console.log('Dist directory exists');
+    // Check if index.html exists
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      console.log('index.html exists in dist directory');
+    } else {
+      console.log('WARNING: index.html does not exist in dist directory');
+    }
+  } else {
+    console.log('WARNING: Dist directory does not exist');
+  }
+  
+  app.use(express.static(distPath));
   
   // Handle React routing, return all requests to React app
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    console.log('Serving index.html for path:', req.path);
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
