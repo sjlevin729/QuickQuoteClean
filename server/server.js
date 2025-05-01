@@ -92,11 +92,13 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
   try {
     // Check if OpenAI API key is available
     if (!process.env.OPENAI_API_KEY) {
+      console.error('OpenAI API key is not configured');
       return res.status(500).json({ error: 'OpenAI API key is not configured. Please set the OPENAI_API_KEY environment variable.' });
     }
 
     // Check if images were uploaded
     if (!req.files || req.files.length === 0) {
+      console.error('No images were uploaded');
       return res.status(400).json({ error: 'No images were uploaded.' });
     }
 
@@ -105,6 +107,9 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
     // Get cleaning context if provided
     const cleaningContext = req.body.context || '';
     console.log('Cleaning context provided:', cleaningContext ? 'Yes' : 'No');
+    if (cleaningContext) {
+      console.log('Context content:', cleaningContext.substring(0, 100) + (cleaningContext.length > 100 ? '...' : ''));
+    }
 
     // Sort the images by filename to ensure they're in the correct order
     const sortedImages = [...req.files].sort((a, b) => {
@@ -118,8 +123,18 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
       return a.originalname.localeCompare(b.originalname);
     });
 
+    console.log(`Sorted ${sortedImages.length} images for analysis`);
+    
+    // Limit the number of images to avoid exceeding API limits
+    const maxImages = 10; // Reduce from 50 to 10 to avoid payload size issues
+    const limitedImages = sortedImages.length > maxImages 
+      ? sortedImages.filter((_, index) => index % Math.ceil(sortedImages.length / maxImages) === 0).slice(0, maxImages)
+      : sortedImages;
+    
+    console.log(`Using ${limitedImages.length} images for API request (from ${sortedImages.length} total)`);
+
     // Prepare images for OpenAI API
-    const imageContents = sortedImages.map(file => {
+    const imageContents = limitedImages.map(file => {
       // Convert the buffer to base64
       const base64Image = file.buffer.toString('base64');
       return {
@@ -146,6 +161,8 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
     
     promptText += "\n\nFormat your response professionally as a cleaning quote with clear sections and pricing.";
 
+    console.log('Sending request to OpenAI API...');
+    
     // Call OpenAI API
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
@@ -161,6 +178,8 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
       max_tokens: 4096,
     });
 
+    console.log('Received response from OpenAI API');
+
     // Generate a unique quote ID
     const timestamp = new Date().getTime();
     const randomStr = Math.random().toString(36).substring(2, 8);
@@ -174,6 +193,14 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
 
   } catch (error) {
     console.error('Error analyzing images:', error);
+    // Log more details about the error
+    if (error.response) {
+      console.error('OpenAI API error details:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      });
+    }
     res.status(500).json({ error: error.message || 'An error occurred during image analysis.' });
   }
 });

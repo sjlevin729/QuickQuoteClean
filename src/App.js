@@ -39,6 +39,7 @@ function App() {
   const [videoStorageUrl, setVideoStorageUrl] = useState('');
   const [showThankYouModal, setShowThankYouModal] = useState(false);
   const [cleaningContext, setCleaningContext] = useState('');
+  const [duration, setDuration] = useState(0);
 
   // Load FFmpeg on component mount
   useEffect(() => {
@@ -55,14 +56,80 @@ function App() {
     load();
   }, []);
 
+  // Extract frames from the video
+  const extractFrames = async () => {
+    try {
+      setProcessingStep('Extracting frames from video...');
+      
+      // Write the video file to FFmpeg's virtual file system
+      ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(video));
+      
+      // Calculate how many frames to extract based on video duration
+      const frameCount = 10; // Limit to 10 frames to avoid API payload size issues
+      
+      // Run FFmpeg command to extract frames
+      await ffmpeg.run(
+        '-i', 'input.mp4',
+        '-vf', `fps=1/${Math.ceil(duration / frameCount)}`,
+        '-vsync', 'vfr',
+        '-q:v', '2',
+        '-f', 'image2',
+        'frame_%03d.jpg'
+      );
+      
+      // Read the extracted frames
+      const frames = [];
+      let i = 1;
+      
+      while (true) {
+        try {
+          const filename = `frame_${String(i).padStart(3, '0')}.jpg`;
+          const data = ffmpeg.FS('readFile', filename);
+          const blob = new Blob([data.buffer], { type: 'image/jpeg' });
+          frames.push({
+            name: filename,
+            blob: blob,
+            url: URL.createObjectURL(blob)
+          });
+          i++;
+        } catch (error) {
+          // No more frames
+          break;
+        }
+      }
+      
+      console.log(`Extracted ${frames.length} frames from video`);
+      extractedImagesRef.current = frames;
+      setImages(frames.map(f => f.url));
+      
+      return frames;
+    } catch (error) {
+      console.error('Error extracting frames:', error);
+      setMessage(`Failed to extract frames: ${error.message}`);
+      setMessageType('danger');
+      setProcessing(false);
+      throw error;
+    }
+  };
+
   // Modified function to include cleaning context in the API request
   const analyzeImages = async (imageFiles) => {
     try {
       setProcessingStep('Analyzing images with AI...');
       
       const formData = new FormData();
-      imageFiles.forEach((file, index) => {
-        formData.append('images', file);
+      
+      // Limit the number of images to avoid payload size issues
+      const maxImages = 10;
+      const limitedImages = imageFiles.length > maxImages 
+        ? imageFiles.filter((_, index) => index % Math.ceil(imageFiles.length / maxImages) === 0).slice(0, maxImages)
+        : imageFiles;
+      
+      console.log(`Sending ${limitedImages.length} images for analysis (from ${imageFiles.length} total)`);
+      
+      // Add each image to the form data
+      limitedImages.forEach((image, index) => {
+        formData.append('images', image.blob, image.name);
       });
       
       // Add cleaning context to the request if provided
@@ -70,13 +137,19 @@ function App() {
         formData.append('context', cleaningContext);
       }
       
+      // Log the request details
+      console.log('Sending API request to:', API_URL);
+      console.log('With context:', cleaningContext ? 'Yes' : 'No');
+      
       const response = await fetch(API_URL, {
         method: 'POST',
         body: formData,
       });
       
       if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('API response error:', response.status, errorText);
+        throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
       }
       
       const data = await response.json();
@@ -118,7 +191,7 @@ function App() {
       setProcessingStep('Analyzing video...');
 
       // Step 1: Extract frames from video
-      await extractFramesFromVideo();
+      await extractFrames();
       
       if (extractedImagesRef.current.length === 0) {
         throw new Error('No frames could be extracted from the video');
@@ -138,68 +211,34 @@ function App() {
     }
   };
 
-  // Extract frames from video
-  const extractFramesFromVideo = async () => {
-    try {
-      // Write the video file to FFmpeg's file system
-      ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(video));
-
-      // Extract frames from the video
-      await ffmpeg.run(
-        '-i', 'input.mp4',
-        '-vf', `fps=${fps}`,
-        '-vsync', '0',
-        '-frame_pts', '1',
-        'frame_%05d.png'
-      );
-
-      // Read the result files and create image objects
-      const frameFiles = ffmpeg.FS('readdir', '.').filter(file => file.startsWith('frame_'));
-      const totalFrames = frameFiles.length;
+  // Handle video selection
+  const handleVideoSelect = (file) => {
+    if (file.type.startsWith('video/')) {
+      setVideo(file);
+      const url = URL.createObjectURL(file);
+      setVideoUrl(url);
       
-      if (totalFrames === 0) {
-        throw new Error('No frames could be extracted from the video');
-      }
+      // Get video duration
+      const videoElement = document.createElement('video');
+      videoElement.src = url;
+      videoElement.onloadedmetadata = () => {
+        setDuration(videoElement.duration);
+        console.log('Video duration:', videoElement.duration);
+      };
       
-      const newImages = [];
-      for (let i = 0; i < totalFrames; i++) {
-        const fileName = frameFiles[i];
-        const data = ffmpeg.FS('readFile', fileName);
-        const blob = new Blob([data.buffer], { type: 'image/png' });
-        
-        newImages.push({
-          id: i + 1,
-          name: `frame_${String(i + 1).padStart(5, '0')}.png`,
-          blob
-        });
-        
-        // Update progress
-        setProgress(Math.round((25 + ((i + 1) / totalFrames) * 50)));
-      }
-      
-      setImages(newImages);
-      extractedImagesRef.current = newImages;
-    } catch (error) {
-      console.error('Error extracting frames:', error);
-      throw new Error('Failed to extract frames from video');
+      setImages([]);
+      setMessage('');
+      setAnalysis('');
+    } else {
+      setMessage('Please upload a valid video file.');
+      setMessageType('danger');
     }
   };
 
   // Handle file upload
   const handleUpload = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      if (file.type.startsWith('video/')) {
-        setVideo(file);
-        setVideoUrl(URL.createObjectURL(file));
-        setImages([]);
-        setMessage('');
-        setAnalysis('');
-      } else {
-        setMessage('Please upload a valid video file.');
-        setMessageType('danger');
-      }
-    }
+    handleVideoSelect(file);
   };
 
   // Handle drag and drop events
@@ -226,18 +265,7 @@ function App() {
     setIsDragging(false);
     
     const file = e.dataTransfer.files[0];
-    if (file) {
-      if (file.type.startsWith('video/')) {
-        setVideo(file);
-        setVideoUrl(URL.createObjectURL(file));
-        setImages([]);
-        setMessage('');
-        setAnalysis('');
-      } else {
-        setMessage('Please drop a valid video file.');
-        setMessageType('danger');
-      }
-    }
+    handleVideoSelect(file);
   };
 
   // Reset the application state
