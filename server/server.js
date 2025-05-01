@@ -87,62 +87,94 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// API endpoint for analyzing images
+// API endpoint to analyze images
 app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res) => {
   try {
-    // Sort images by name to ensure they're in the correct order
-    const sortedImages = req.files.sort((a, b) => {
-      const nameA = a.originalname;
-      const nameB = b.originalname;
-      return nameA.localeCompare(nameB);
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'OpenAI API key is not configured. Please set the OPENAI_API_KEY environment variable.' });
+    }
+
+    // Check if images were uploaded
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No images were uploaded.' });
+    }
+
+    console.log(`Received ${req.files.length} images for analysis`);
+
+    // Get cleaning context if provided
+    const cleaningContext = req.body.context || '';
+    console.log('Cleaning context provided:', cleaningContext ? 'Yes' : 'No');
+
+    // Sort the images by filename to ensure they're in the correct order
+    const sortedImages = [...req.files].sort((a, b) => {
+      const aMatch = a.originalname.match(/frame_(\d+)/);
+      const bMatch = b.originalname.match(/frame_(\d+)/);
+      
+      if (aMatch && bMatch) {
+        return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+      }
+      
+      return a.originalname.localeCompare(b.originalname);
     });
 
     // Prepare images for OpenAI API
     const imageContents = sortedImages.map(file => {
-      // Convert buffer to base64
+      // Convert the buffer to base64
       const base64Image = file.buffer.toString('base64');
       return {
-        type: 'image_url',
+        type: "image_url",
         image_url: {
-          url: `data:image/png;base64,${base64Image}`
+          url: `data:${file.mimetype};base64,${base64Image}`
         }
       };
     });
 
-    // Prompt for the OpenAI Vision model
-    const prompt = `You are a professional cleaning service estimator. Analyze these sequential images of a space and provide a detailed cleaning quote.
-
-Your response should have this structure:
-1. A brief summary of the space (type of room, size, level of clutter) - be professional and tactful
-2. An itemized list of cleaning tasks with estimated time for each task
-3. Total time and cost calculation (at £15 per hour)
-
-Do not format this as a letter - no greeting, client name placeholders, or sign-off.
-Keep your response concise and focused on the cleaning assessment and quote.
-
-If the images do not show a space that needs cleaning (e.g., it's not a room, office, or cleanable area), politely explain that you can only provide quotes for indoor spaces that require cleaning services.`;
+    // Construct the prompt with cleaning context if provided
+    let promptText = "You are a professional cleaning service estimator. Analyze these images of a space and provide a detailed cleaning quote. Include:";
+    promptText += "\n1. A breakdown of all areas that need cleaning";
+    promptText += "\n2. Specific cleaning tasks required for each area";
+    promptText += "\n3. Estimated time for each task";
+    promptText += "\n4. Materials and equipment needed";
+    promptText += "\n5. Total cost estimate (in GBP £) with a breakdown";
+    
+    // Add cleaning context to the prompt if provided
+    if (cleaningContext) {
+      promptText += `\n\nAdditional context from the customer: ${cleaningContext}`;
+      promptText += "\nPlease take this information into account when creating your quote.";
+    }
+    
+    promptText += "\n\nFormat your response professionally as a cleaning quote with clear sections and pricing.";
 
     // Call OpenAI API
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: "gpt-4-vision-preview",
       messages: [
         {
-          role: 'system',
-          content: prompt
-        },
-        {
-          role: 'user',
-          content: imageContents
+          role: "user",
+          content: [
+            { type: "text", text: promptText },
+            ...imageContents
+          ]
         }
       ],
-      max_tokens: 1000,
+      max_tokens: 4096,
     });
 
-    // Send the analysis back to the client
-    res.json({ analysis: response.choices[0].message.content });
+    // Generate a unique quote ID
+    const timestamp = new Date().getTime();
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    const quoteId = `QQ-${timestamp.toString().slice(-6)}-${randomStr}`;
+
+    // Send the response back to the client
+    res.json({ 
+      analysis: response.choices[0].message.content,
+      quoteId: quoteId
+    });
+
   } catch (error) {
     console.error('Error analyzing images:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message || 'An error occurred during image analysis.' });
   }
 });
 

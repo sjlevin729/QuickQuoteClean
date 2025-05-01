@@ -38,6 +38,7 @@ function App() {
   const [showUserForm, setShowUserForm] = useState(false);
   const [videoStorageUrl, setVideoStorageUrl] = useState('');
   const [showThankYouModal, setShowThankYouModal] = useState(false);
+  const [cleaningContext, setCleaningContext] = useState('');
 
   // Load FFmpeg on component mount
   useEffect(() => {
@@ -54,58 +55,47 @@ function App() {
     load();
   }, []);
 
-  // Handle file upload
-  const handleUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (file.type.startsWith('video/')) {
-        setVideo(file);
-        setVideoUrl(URL.createObjectURL(file));
-        setImages([]);
-        setMessage('');
-        setAnalysis('');
-      } else {
-        setMessage('Please upload a valid video file.');
-        setMessageType('danger');
+  // Modified function to include cleaning context in the API request
+  const analyzeImages = async (imageFiles) => {
+    try {
+      setProcessingStep('Analyzing images with AI...');
+      
+      const formData = new FormData();
+      imageFiles.forEach((file, index) => {
+        formData.append('images', file);
+      });
+      
+      // Add cleaning context to the request if provided
+      if (cleaningContext.trim()) {
+        formData.append('context', cleaningContext);
       }
-    }
-  };
-
-  // Handle drag and drop events
-  const handleDragEnter = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      if (file.type.startsWith('video/')) {
-        setVideo(file);
-        setVideoUrl(URL.createObjectURL(file));
-        setImages([]);
-        setMessage('');
-        setAnalysis('');
-      } else {
-        setMessage('Please upload a valid video file.');
-        setMessageType('danger');
+      
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
       }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      setAnalysis(data.analysis);
+      setQuoteId(data.quoteId || `QQ${Math.floor(Math.random() * 10000)}`);
+      setProcessing(false);
+      setProgress(100);
+      setProcessingStep('Quote generated successfully!');
+      
+    } catch (error) {
+      console.error('Error analyzing images:', error);
+      setMessage(`Failed to analyze images: ${error.message}`);
+      setMessageType('danger');
+      setProcessing(false);
     }
   };
 
@@ -136,12 +126,7 @@ function App() {
       
       // Step 2: Send images to AI for analysis
       setProcessingStep('Generating cleaning quote...');
-      await analyzeImagesWithAI();
-      
-      // Generate a unique quote ID but don't save to database yet
-      const timestamp = new Date().getTime();
-      const randomStr = Math.random().toString(36).substring(2, 8);
-      setQuoteId(`QQ-${timestamp.toString().slice(-6)}-${randomStr}`);
+      await analyzeImages(extractedImagesRef.current);
       
     } catch (error) {
       console.error('Error processing video:', error);
@@ -200,53 +185,58 @@ function App() {
     }
   };
 
-  // Send images to AI for analysis
-  const analyzeImagesWithAI = async () => {
-    try {
-      const framesToAnalyze = extractedImagesRef.current;
-      
-      if (!framesToAnalyze || framesToAnalyze.length === 0) {
-        throw new Error('No images to analyze');
+  // Handle file upload
+  const handleUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.type.startsWith('video/')) {
+        setVideo(file);
+        setVideoUrl(URL.createObjectURL(file));
+        setImages([]);
+        setMessage('');
+        setAnalysis('');
+      } else {
+        setMessage('Please upload a valid video file.');
+        setMessageType('danger');
       }
-      
-      // Create a FormData object to send the images
-      const formData = new FormData();
-      
-      // Add each image to the form data
-      // Limit to a reasonable number of images to avoid overwhelming the API
-      const imagesToSend = framesToAnalyze.length > 20 ? 
-        framesToAnalyze.filter((_, index) => index % Math.ceil(framesToAnalyze.length / 20) === 0) : 
-        framesToAnalyze;
-      
-      imagesToSend.forEach(image => {
-        formData.append('images', image.blob, image.name);
-      });
+    }
+  };
 
-      // Send the request to the server
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        body: formData,
-      });
+  // Handle drag and drop events
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
 
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      if (file.type.startsWith('video/')) {
+        setVideo(file);
+        setVideoUrl(URL.createObjectURL(file));
+        setImages([]);
+        setMessage('');
+        setAnalysis('');
+      } else {
+        setMessage('Please drop a valid video file.');
+        setMessageType('danger');
       }
-
-      const data = await response.json();
-      
-      // Clean up the formatting of the analysis text
-      let cleanedAnalysis = data.analysis;
-      // Remove markdown formatting like ** (bold) and * (italic)
-      cleanedAnalysis = cleanedAnalysis.replace(/\*\*/g, '').replace(/\*/g, '');
-      // Remove any other unwanted formatting
-      cleanedAnalysis = cleanedAnalysis.replace(/#{1,6}\s/g, ''); // Remove headings
-      cleanedAnalysis = cleanedAnalysis.replace(/\n\s*-\s/g, '\n• '); // Convert dashes to bullets
-      
-      setAnalysis(cleanedAnalysis);
-      setProgress(100);
-    } catch (error) {
-      console.error('Error analyzing images:', error);
-      throw new Error(`Failed to analyze video: ${error.message}`);
     }
   };
 
@@ -385,6 +375,48 @@ function App() {
         <h2 className="section-title">Get Your Cleaning Quote</h2>
         <p className="section-subtitle">Simply upload a video of the space you need cleaned, and our AI will analyze it to provide a detailed quote</p>
 
+        {/* How It Works Section */}
+        <section className="how-it-works">
+          <h3 className="section-title">How It Works</h3>
+          <div className="steps-container">
+            <div className="step-card">
+              <div className="step-number">1</div>
+              <div className="step-icon">
+                <i className="bi bi-camera-video"></i>
+              </div>
+              <h4 className="step-title">Upload Video</h4>
+              <p className="step-description">Upload a video of the space you need cleaned</p>
+            </div>
+            
+            <div className="step-card">
+              <div className="step-number">2</div>
+              <div className="step-icon">
+                <i className="bi bi-chat-text"></i>
+              </div>
+              <h4 className="step-title">Add Context</h4>
+              <p className="step-description">Tell us about your specific cleaning needs</p>
+            </div>
+            
+            <div className="step-card">
+              <div className="step-number">3</div>
+              <div className="step-icon">
+                <i className="bi bi-robot"></i>
+              </div>
+              <h4 className="step-title">AI Analysis</h4>
+              <p className="step-description">Our AI analyzes your space in detail</p>
+            </div>
+            
+            <div className="step-card">
+              <div className="step-number">4</div>
+              <div className="step-icon">
+                <i className="bi bi-receipt"></i>
+              </div>
+              <h4 className="step-title">Get Quote</h4>
+              <p className="step-description">Receive a detailed cleaning quote instantly</p>
+            </div>
+          </div>
+        </section>
+
         {/* Message Display */}
         {message && (
           <div className={`message message-${messageType}`}>
@@ -393,7 +425,7 @@ function App() {
         )}
 
         {/* Upload Section */}
-        {!processing && !analysis && (
+        {!processing && !analysis && !videoUrl && (
           <section className="upload-section">
             <div
               className={`upload-container ${isDragging ? 'dragging' : ''}`}
@@ -432,6 +464,58 @@ function App() {
                 accept="video/*"
                 style={{ display: 'none' }}
               />
+            </div>
+          </section>
+        )}
+
+        {/* Video Preview Section */}
+        {videoUrl && !processing && !analysis && (
+          <section className="video-preview-container">
+            <h3 className="section-title">Video Preview</h3>
+            <div className="video-preview-content">
+              <div className="video-preview-player">
+                <video className="video-player" src={videoUrl} controls />
+              </div>
+              <div className="video-preview-actions">
+                <div className="video-actions-card">
+                  <h4 className="video-title">Ready for Analysis</h4>
+                  
+                  <div className="form-group">
+                    <label className="context-label" htmlFor="cleaning-context">
+                      Cleaning Requirements
+                    </label>
+                    <textarea
+                      id="cleaning-context"
+                      className="context-textarea"
+                      placeholder="Tell us about your specific cleaning needs, preferences, or any areas that need special attention..."
+                      value={cleaningContext}
+                      onChange={(e) => setCleaningContext(e.target.value)}
+                    ></textarea>
+                    <p className="context-helper">This information will help our AI provide a more accurate quote.</p>
+                  </div>
+                  
+                  <div className="action-buttons">
+                    <button 
+                      className="btn btn-primary" 
+                      onClick={processVideoAndGetQuote}
+                    >
+                      <i className="bi bi-magic me-2"></i>
+                      Get Cleaning Quote
+                    </button>
+                    <button 
+                      className="btn btn-secondary" 
+                      onClick={() => {
+                        setVideo(null);
+                        setVideoUrl('');
+                        setCleaningContext('');
+                      }}
+                    >
+                      <i className="bi bi-arrow-left me-2"></i>
+                      Choose Different Video
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
         )}
