@@ -165,7 +165,7 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
     
     // Call OpenAI API
     const response = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
+      model: "gpt-4o",
       messages: [
         {
           role: "user",
