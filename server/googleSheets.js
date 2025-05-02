@@ -65,36 +65,42 @@ async function addQuoteToSheet(quoteData) {
   try {
     const sheets = await getGoogleSheetsClient();
     
-    // Format user info
-    const userInfoStr = quoteData.userInfo ? 
-      `Name: ${quoteData.userInfo.name || 'N/A'}, Email: ${quoteData.userInfo.email || 'N/A'}, Phone: ${quoteData.userInfo.phone || 'N/A'}` : 
-      'No user info provided';
-    
     // Parse activity counts to create a readable summary
     let activitySummary = '';
     try {
       if (quoteData.activityCounts) {
-        const counts = JSON.parse(quoteData.activityCounts);
+        const counts = typeof quoteData.activityCounts === 'string' 
+          ? JSON.parse(quoteData.activityCounts) 
+          : quoteData.activityCounts;
         
-        // Format rooms
+        // Format rooms in a more readable way
         if (counts.rooms) {
-          activitySummary += 'Rooms: ';
-          const roomEntries = Object.entries(counts.rooms)
-            .filter(([_, count]) => count > 0)
-            .map(([room, count]) => `${room}(${count})`)
-            .join(', ');
-          activitySummary += roomEntries || 'None';
-          activitySummary += '; ';
+          activitySummary = 'Rooms:\n';
+          Object.entries(counts.rooms).forEach(([room, count]) => {
+            if (count > 0) {
+              // Convert camelCase to Title Case (e.g., "livingDiningRooms" to "Living Dining Rooms")
+              const formattedRoom = room
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, str => str.toUpperCase());
+              
+              activitySummary += `${formattedRoom}: ${count}\n`;
+            }
+          });
         }
         
-        // Format activities
+        // Format activities in a more readable way
         if (counts.activities) {
-          activitySummary += 'Activities: ';
-          const activityEntries = Object.entries(counts.activities)
-            .filter(([_, included]) => included)
-            .map(([activity]) => activity)
-            .join(', ');
-          activitySummary += activityEntries || 'None';
+          activitySummary += '\nActivities:\n';
+          Object.entries(counts.activities).forEach(([activity, included]) => {
+            if (included) {
+              // Convert camelCase to Title Case
+              const formattedActivity = activity
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, str => str.toUpperCase());
+              
+              activitySummary += `${formattedActivity}: Yes\n`;
+            }
+          });
         }
       }
     } catch (error) {
@@ -102,23 +108,25 @@ async function addQuoteToSheet(quoteData) {
       activitySummary = 'Error parsing activity counts';
     }
     
-    // Prepare row data
+    // Prepare row data with proper formatting for each column
     const values = [
       [
-        quoteData.quoteId,
-        quoteData.timestamp,
-        userInfoStr,
+        quoteData.quoteId || '',
+        new Date().toLocaleDateString('en-GB'), // Format date as DD/MM/YYYY
+        quoteData.userInfo?.name || '',
+        quoteData.userInfo?.email || '',
+        quoteData.userInfo?.phone || '',
         quoteData.cleaningContext || '',
         activitySummary,
         quoteData.analysis || '',
-        quoteData.estimatedPrice || 'Not specified'
+        quoteData.estimatedPrice || ''
       ]
     ];
     
     // Append data to the sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Sheet1!A:G',  // Updated to include the new activity counts column
+      range: 'Sheet1!A:K',  // Updated to include all columns
       valueInputOption: 'RAW',
       resource: {
         values

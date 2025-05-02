@@ -437,7 +437,7 @@ app.post('/api/save-quote', express.json(), async (req, res) => {
           timestamp: new Date().toISOString(),
           userInfo,
           cleaningContext: cleaningContext || '',
-          activityCounts: activityCounts ? JSON.stringify(activityCounts) : '{}',
+          activityCounts: activityCounts || {},
           analysis: quoteText,
           estimatedPrice
         };
