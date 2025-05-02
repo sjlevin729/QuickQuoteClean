@@ -5,18 +5,33 @@ const fs = require('fs');
 // This function initializes the Google Sheets API client
 async function getGoogleSheetsClient() {
   try {
-    // Path to service account credentials file
-    // You'll need to place this file in your server directory
-    const CREDENTIALS_PATH = path.join(__dirname, 'google-credentials.json');
+    let credentials;
     
-    // Check if credentials file exists
-    if (!fs.existsSync(CREDENTIALS_PATH)) {
-      console.error('Google credentials file not found at:', CREDENTIALS_PATH);
-      throw new Error('Google credentials file not found');
+    // Check if credentials are provided as a Base64-encoded environment variable
+    if (process.env.GOOGLE_CREDENTIALS_BASE64) {
+      try {
+        // Decode the Base64 string to get the JSON credentials
+        const credentialsJson = Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString();
+        credentials = JSON.parse(credentialsJson);
+        console.log('Using Google credentials from environment variable');
+      } catch (decodeError) {
+        console.error('Error decoding Google credentials from environment variable:', decodeError);
+        throw new Error('Invalid Google credentials in environment variable');
+      }
+    } else {
+      // Fall back to file-based credentials
+      const CREDENTIALS_PATH = path.join(__dirname, 'google-credentials.json');
+      
+      // Check if credentials file exists
+      if (!fs.existsSync(CREDENTIALS_PATH)) {
+        console.error('Google credentials file not found at:', CREDENTIALS_PATH);
+        throw new Error('Google credentials not found. Please provide either a credentials file or set GOOGLE_CREDENTIALS_BASE64 environment variable');
+      }
+      
+      // Load credentials from file
+      credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
+      console.log('Using Google credentials from file');
     }
-    
-    // Load credentials
-    const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
     
     // Create JWT client
     const auth = new google.auth.JWT(
