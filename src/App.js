@@ -829,12 +829,8 @@ function App() {
       {/* Header */}
       <header className="app-header">
         <div className="header-content">
-          <div className="brand">QuickQuoteClean</div>
+          <div className="brand" onClick={() => window.location.href = '/'} style={{ cursor: 'pointer' }}>QuickQuoteClean</div>
           <div className="contact-info">
-            <div className="contact-item">
-              <i className="bi bi-telephone"></i>
-              +447539412914
-            </div>
             <div className="contact-item">
               <i className="bi bi-envelope"></i>
               quickquoteclean@gmail.com
@@ -1309,9 +1305,6 @@ function App() {
         <div className="footer-content">
           <div className="footer-logo">QuickQuoteClean</div>
           <div className="footer-contact">
-            <div className="footer-contact-item">
-              <i className="bi bi-telephone"></i> +447539412914
-            </div>
             <div className="footer-contact-item">
               <i className="bi bi-envelope"></i> quickquoteclean@gmail.com
             </div>
