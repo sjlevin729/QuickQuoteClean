@@ -11,26 +11,17 @@ const ffmpeg = createFFmpeg({
 // API endpoint for image analysis
 const API_URL = '/api/analyze-images';
 
-// Cleaning Animation Component
-const CleaningAnimation = () => {
-  return (
-    <div className="cleaning-animation-container">
-      <div className="cleaning-animation">
-        <div className="table-surface"></div>
-        <div className="hand">
-          <div className="cloth"></div>
-        </div>
-        <div className="dirt-particles">
-          <div className="dirt-particle p1"></div>
-          <div className="dirt-particle p2"></div>
-          <div className="dirt-particle p3"></div>
-          <div className="dirt-particle p4"></div>
-          <div className="dirt-particle p5"></div>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Funny loading messages
+const loadingMessages = [
+  "Dust bunnies are multiplying as we speak. We're calculating their eviction notice",
+  "Polishing our crystal ball to predict the perfect price for your sparkle",
+  "Summoning the cleaning fairies... they're a bit slow after their tea break",
+  "Hold tight! We're just herding the dirt particles into a neat little pile for you",
+  "Calculating the precise amount of elbow grease required",
+  "We're not just generating a quote, we're crafting a masterpiece of cleanliness. Almost there!",
+  "Your patience is appreciated. Unlike the stubborn stains we're about to tackle",
+  "Brewing up the perfect price, just like a strong cup of cleaning solution"
+];
 
 function App() {
   const [loaded, setLoaded] = useState(false);
@@ -83,18 +74,6 @@ function App() {
     notes: ''
   });
 
-  // Funny loading messages
-  const loadingMessages = [
-    "Dust bunnies are multiplying as we speak. We're calculating their eviction notice",
-    "Polishing our crystal ball to predict the perfect price for your sparkle",
-    "Summoning the cleaning fairies... they're a bit slow after their tea break",
-    "Hold tight! We're just herding the dirt particles into a neat little pile for you",
-    "Calculating the precise amount of elbow grease required",
-    "We're not just generating a quote, we're crafting a masterpiece of cleanliness. Almost there!",
-    "Your patience is appreciated. Unlike the stubborn stains we're about to tackle",
-    "Brewing up the perfect price, just like a strong cup of cleaning solution"
-  ];
-
   // Rotate loading messages
   useEffect(() => {
     let messageInterval;
@@ -102,15 +81,18 @@ function App() {
     if (processing) {
       // Set initial message
       setLoadingMessage(loadingMessages[0]);
-
+      
       // Rotate messages every 4 seconds
       let messageIndex = 1;
       messageInterval = setInterval(() => {
         setLoadingMessage(loadingMessages[messageIndex]);
         messageIndex = (messageIndex + 1) % loadingMessages.length;
       }, 4000);
+    } else {
+      // Clear message when not processing
+      setLoadingMessage('');
     }
-
+    
     return () => {
       if (messageInterval) {
         clearInterval(messageInterval);
@@ -1036,8 +1018,22 @@ function App() {
         {processing && (
           <section className="processing-section">
             <h3 className="processing-title">Generating Your Cleaning Quote</h3>
-            <div className="loading-message">{loadingMessage}</div>
-            <CleaningAnimation />
+            <div className="loading-message">{loadingMessage || "Analyzing your space and calculating the perfect cleaning plan..."}</div>
+            <div className="cleaning-animation-container">
+              <div className="cleaning-animation">
+                <div className="table-surface"></div>
+                <div className="hand">
+                  <div className="cloth"></div>
+                </div>
+                <div className="dirt-particles">
+                  <div className="dirt-particle p1"></div>
+                  <div className="dirt-particle p2"></div>
+                  <div className="dirt-particle p3"></div>
+                  <div className="dirt-particle p4"></div>
+                  <div className="dirt-particle p5"></div>
+                </div>
+              </div>
+            </div>
             <div className="processing-step">{processingStep}</div>
           </section>
         )}
