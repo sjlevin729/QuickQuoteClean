@@ -426,6 +426,19 @@ app.post('/api/save-quote', express.json(), async (req, res) => {
 
     console.log(`Saving quote ${quoteId} with estimated price £${estimatedPrice}`);
 
+    // Get video URL from database if available
+    let videoUrl = '';
+    try {
+      const quoteData = db.getQuoteById(quoteId);
+      if (quoteData && quoteData.videoUrl) {
+        videoUrl = quoteData.videoUrl;
+        console.log(`Found video URL for quote ${quoteId}: ${videoUrl}`);
+      }
+    } catch (dbError) {
+      console.error('Error retrieving video URL from database:', dbError);
+      // Continue even if we can't get the video URL
+    }
+
     // Save to Google Sheets if configured
     try {
       if (process.env.GOOGLE_SHEET_ID) {
@@ -439,7 +452,8 @@ app.post('/api/save-quote', express.json(), async (req, res) => {
           cleaningContext: cleaningContext || '',
           activityCounts: activityCounts || {},
           analysis: quoteText,
-          estimatedPrice
+          estimatedPrice,
+          videoUrl
         };
         
         await addQuoteToSheet(quoteData);

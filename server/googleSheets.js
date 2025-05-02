@@ -54,11 +54,12 @@ async function getGoogleSheetsClient() {
  * @param {Object} quoteData - The quote data to add
  * @param {string} quoteData.quoteId - The unique ID of the quote
  * @param {string} quoteData.timestamp - ISO timestamp of when the quote was created
- * @param {Object} quoteData.userInfo - User information (name, email, phone)
+ * @param {Object} quoteData.userInfo - User information (name, email, phone, address)
  * @param {string} quoteData.cleaningContext - Additional context provided by the user
  * @param {string} quoteData.activityCounts - JSON string of the activity counts
  * @param {string} quoteData.analysis - The full quote text
  * @param {string} quoteData.estimatedPrice - The estimated price extracted from the quote
+ * @param {string} quoteData.videoUrl - The URL of the video
  * @returns {Promise<void>}
  */
 async function addQuoteToSheet(quoteData) {
@@ -116,17 +117,19 @@ async function addQuoteToSheet(quoteData) {
         quoteData.userInfo?.name || '',
         quoteData.userInfo?.email || '',
         quoteData.userInfo?.phone || '',
+        quoteData.userInfo?.address || '',
         quoteData.cleaningContext || '',
         activitySummary,
         quoteData.analysis || '',
-        quoteData.estimatedPrice || ''
+        quoteData.estimatedPrice || '',
+        quoteData.videoUrl || ''
       ]
     ];
     
     // Append data to the sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Sheet1!A:K',  // Updated to include all columns
+      range: 'Sheet1!A:L',  // Updated to include all columns including address and video URL
       valueInputOption: 'RAW',
       resource: {
         values
