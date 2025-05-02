@@ -335,43 +335,49 @@ body {
 
 /* Processing Section */
 .processing-section {
+  padding: 3rem 0;
+  background-color: var(--bg-light);
+  min-height: 400px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  background-color: var(--light-color);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin: 2rem auto;
-  max-width: 800px;
+}
+
+.processing-container {
   text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.spinner-container {
+  margin-bottom: 1.5rem;
+}
+
+.spinner-border {
+  width: 4rem;
+  height: 4rem;
+  color: var(--primary-color);
 }
 
 .processing-title {
-  color: var(--primary-color);
-  margin-bottom: 1.5rem;
-  text-align: center;
-  font-weight: 600;
   font-size: 1.8rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
 }
 
 .loading-message {
   font-size: 1.2rem;
-  color: var(--secondary-color);
-  text-align: center;
-  margin: 1rem 0 2rem;
-  min-height: 3.6rem;
+  color: var(--text-secondary);
   font-style: italic;
-  max-width: 600px;
-  line-height: 1.5;
+  margin-bottom: 1.5rem;
 }
 
-.processing-step {
-  font-size: 0.9rem;
-  color: var(--text-color);
-  margin-top: 1.5rem;
-  opacity: 0.8;
+.error-message {
+  color: var(--danger);
+  padding: 1rem;
+  background-color: rgba(255, 0, 0, 0.1);
+  border-radius: 8px;
+  margin-top: 1rem;
 }
 
 /* Results Section */

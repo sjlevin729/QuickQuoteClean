@@ -28,16 +28,26 @@ function App() {
   const [video, setVideo] = useState(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [images, setImages] = useState([]);
+  const [analysis, setAnalysis] = useState('');
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [fps, setFps] = useState(1);
   const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState('info');
-  const [isDragging, setIsDragging] = useState(false);
-  const [analysis, setAnalysis] = useState('');
+  const [messageType, setMessageType] = useState('');
+  const [currentStep, setCurrentStep] = useState(0);
   const [quoteId, setQuoteId] = useState('');
+  const [userInfo, setUserInfo] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    notes: ''
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState('');
+  const [loadingMessageInterval, setLoadingMessageInterval] = useState(null);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
   const [showUserForm, setShowUserForm] = useState(false);
-  const [videoStorageUrl, setVideoStorageUrl] = useState('');
   const [showThankYouModal, setShowThankYouModal] = useState(false);
   const [cleaningContext, setCleaningContext] = useState('');
   const [duration, setDuration] = useState(0);
@@ -56,17 +66,16 @@ function App() {
   const recordingTimeRef = useRef(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordingInterval, setRecordingInterval] = useState(null);
-  const [loadingMessage, setLoadingMessage] = useState('');
   const uploadRef = useRef(null);
   const extractedImagesRef = useRef([]);
   const [processingStep, setProcessingStep] = useState('');
-  const [userInfo, setUserInfo] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    notes: ''
-  });
+  const [fps, setFps] = useState(1);
+  const [videoStorageUrl, setVideoStorageUrl] = useState('');
+
+  // Get a random loading message
+  const getRandomLoadingMessage = () => {
+    return loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
+  };
 
   // Rotate loading messages
   useEffect(() => {
@@ -74,7 +83,7 @@ function App() {
 
     if (processing) {
       // Set initial message
-      setLoadingMessage(loadingMessages[0]);
+      setLoadingMessage(getRandomLoadingMessage());
       
       // Rotate messages every 4 seconds
       let messageIndex = 1;
@@ -177,6 +186,13 @@ function App() {
     try {
       console.log('Starting frame extraction from video...');
       
+      // Make sure FFmpeg is loaded
+      if (!loaded) {
+        console.log('FFmpeg not loaded yet, loading now...');
+        await ffmpeg.load();
+        setLoaded(true);
+      }
+      
       // Get video duration if not already set
       if (!duration) {
         const videoElement = document.createElement('video');
@@ -187,8 +203,24 @@ function App() {
             setDuration(videoElement.duration);
             resolve();
           };
+          
+          // Add error handler
+          videoElement.onerror = (e) => {
+            console.error('Error loading video metadata:', e);
+            setDuration(30); // Default to 30 seconds
+            resolve();
+          };
+          
+          // Add timeout in case metadata loading hangs
+          setTimeout(() => {
+            console.log('Metadata loading timed out, using default duration');
+            setDuration(30);
+            resolve();
+          }, 5000);
         });
       }
+      
+      console.log('Video duration:', duration || 30, 'seconds');
       
       // Write the video file to FFmpeg's virtual file system
       ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(videoFile));
@@ -198,6 +230,8 @@ function App() {
       // Calculate how many frames to extract (limit to 10 frames)
       const frameCount = 10;
       const frameRate = frameCount / (duration || 30); // Default to 30s if duration not available
+      
+      console.log('Using frame rate:', frameRate, 'fps');
 
       // Run FFmpeg command to extract frames
       await ffmpeg.run(
@@ -226,13 +260,25 @@ function App() {
             url: URL.createObjectURL(blob)
           });
           i++;
+          
+          // Limit to 20 frames maximum to avoid memory issues
+          if (i > 20) {
+            console.log('Reached maximum frame limit (20)');
+            break;
+          }
         } catch (error) {
           // No more frames
+          console.log('No more frames found at index:', i);
           break;
         }
       }
 
       console.log(`Successfully extracted ${frames.length} frames from video`);
+      
+      if (frames.length === 0) {
+        throw new Error('No frames could be extracted from the video');
+      }
+      
       return frames;
     } catch (error) {
       console.error('Error extracting frames:', error);
@@ -718,6 +764,7 @@ function App() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Handle form submission for the new two-step process
   const handleSubmit = async () => {
     if (!video && recordedChunks.length === 0) {
       alert('Please select or record a video first.');
@@ -727,13 +774,23 @@ function App() {
     setIsProcessing(true);
     setCurrentStep(2);
     setAnalysis('');
+    setError('');
     setLoadingMessage(getRandomLoadingMessage());
-    setLoadingMessageInterval(setInterval(() => {
+    
+    // Clear any existing interval
+    if (loadingMessageInterval) {
+      clearInterval(loadingMessageInterval);
+    }
+    
+    // Set up new interval for rotating messages
+    const interval = setInterval(() => {
       setLoadingMessage(getRandomLoadingMessage());
-    }, 5000));
+    }, 5000);
+    
+    setLoadingMessageInterval(interval);
 
     try {
-      console.log('Starting video processing...');
+      console.log('Starting video processing for two-step quote...');
       
       // Create video file from recorded chunks if needed
       const videoFile = video || new File(
@@ -744,7 +801,7 @@ function App() {
       
       // Extract frames from the video
       const frames = await extractFramesFromVideo(videoFile);
-      console.log(`Extracted ${frames.length} frames from video`);
+      console.log(`Successfully extracted ${frames.length} frames from video`);
 
       // Create a FormData object to send the frames
       const formData = new FormData();
@@ -778,6 +835,8 @@ function App() {
         throw new Error(data.error || 'Failed to analyze video');
       }
 
+      console.log('Initial analysis received:', data.initialAnalysis);
+      
       // Set the initial analysis and activity counts
       setInitialAnalysis(data.initialAnalysis);
       setActivityCounts(data.initialAnalysis);
@@ -785,13 +844,11 @@ function App() {
       
       // Show the adjustment UI
       setShowAdjustmentUI(true);
-      setIsProcessing(false);
-      clearInterval(loadingMessageInterval);
-      setLoadingMessageInterval(null);
 
     } catch (error) {
       console.error('Error processing video:', error);
       setError(`Error: ${error.message}`);
+    } finally {
       setIsProcessing(false);
       clearInterval(loadingMessageInterval);
       setLoadingMessageInterval(null);
@@ -1130,19 +1187,19 @@ function App() {
         )}
 
         {/* Processing Section */}
-        {processing && (
+        {isProcessing && (
           <section className="processing-section">
-            <h3 className="processing-title">Generating Your Cleaning Quote</h3>
-            <div className="loading-message" style={{ fontSize: '1.2rem', color: '#5a6268', margin: '1rem 0 2rem', minHeight: '3.6rem', fontStyle: 'italic', maxWidth: '600px', lineHeight: '1.5', textAlign: 'center' }}>
-              {processingStep || "Analyzing your space and calculating the perfect cleaning plan..."}
-            </div>
-            <div style={{ textAlign: 'center', margin: '20px 0' }}>
-              <div className="spinner-border text-primary" role="status" style={{ width: '4rem', height: '4rem' }}>
-                <span className="visually-hidden">Loading...</span>
+            <div className="container">
+              <div className="processing-container">
+                <div className="spinner-container">
+                  <div className="spinner-border" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+                <h3 className="processing-title">Processing Your Video</h3>
+                <p className="loading-message">{loadingMessage}</p>
+                {error && <div className="error-message">{error}</div>}
               </div>
-              <p style={{ marginTop: '15px', fontSize: '1.1rem', color: '#007bff' }}>
-                {loadingMessages[Math.floor(Math.random() * loadingMessages.length)]}
-              </p>
             </div>
           </section>
         )}
