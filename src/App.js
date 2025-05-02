@@ -873,44 +873,61 @@ function App() {
     });
   };
 
-  // Generate final quote with adjusted activity counts
-  const generateFinalQuote = async () => {
+  // Handle generating the final quote based on adjusted counts
+  const handleGenerateFinalQuote = async () => {
     setIsProcessing(true);
-    setLoadingMessage(getRandomLoadingMessage());
-    setLoadingMessageInterval(setInterval(() => {
+    setError('');
+    setLoadingMessage('Generating your final quote based on your adjustments...');
+    
+    // Clear any existing interval
+    if (loadingMessageInterval) {
+      clearInterval(loadingMessageInterval);
+    }
+    
+    // Set up new interval for rotating messages
+    const interval = setInterval(() => {
       setLoadingMessage(getRandomLoadingMessage());
-    }, 5000));
+    }, 5000);
+    
+    setLoadingMessageInterval(interval);
 
     try {
+      console.log('Sending adjusted activity counts to generate final quote:', activityCounts);
+      
       const response = await fetch('/api/generate-quote', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          quoteId,
           cleaningContext,
-          activityCounts,
-          quoteId
+          activityCounts
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate quote');
+        const errorText = await response.text();
+        console.error('API response error:', response.status, errorText);
+        throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
       }
 
       const data = await response.json();
       
       if (!data.success) {
-        throw new Error(data.error || 'Failed to generate quote');
+        throw new Error(data.error || 'Failed to generate final quote');
       }
 
-      setAnalysis(data.quote);
-      setCurrentStep(3);
-      setShowAdjustmentUI(false);
+      console.log('Final quote received:', data.quote);
       
+      // Set the final quote analysis
+      setAnalysis(data.quote);
+      
+      // Hide the adjustment UI
+      setShowAdjustmentUI(false);
+
     } catch (error) {
-      console.error('Error generating quote:', error);
+      console.error('Error generating final quote:', error);
       setError(`Error: ${error.message}`);
     } finally {
       setIsProcessing(false);
@@ -919,7 +936,7 @@ function App() {
     }
   };
 
-  // Handle amend quote button click
+  // Handle amending the quote
   const handleAmendQuote = () => {
     if (initialAnalysis) {
       // If we have initial analysis, go back to adjustment UI
@@ -1204,6 +1221,87 @@ function App() {
           </section>
         )}
 
+        {/* Adjustment UI Section */}
+        {showAdjustmentUI && activityCounts && (
+          <section className="adjustment-section">
+            <div className="container">
+              <h3 className="section-title">Adjust Your Cleaning Estimate</h3>
+              <p className="adjustment-description">
+                We've analyzed your video and estimated the following rooms and activities. 
+                Please adjust these counts to match your actual needs.
+              </p>
+              
+              <div className="adjustment-container">
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="adjustment-card">
+                      <h4 className="adjustment-card-title">Rooms</h4>
+                      <div className="adjustment-items">
+                        {activityCounts.rooms && Object.entries(activityCounts.rooms).map(([room, count]) => (
+                          <div className="adjustment-item" key={room}>
+                            <span className="adjustment-item-label">
+                              {room.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                            </span>
+                            <div className="adjustment-controls">
+                              <button 
+                                className="adjustment-btn" 
+                                onClick={() => handleActivityCountChange('rooms', room, -1)}
+                                disabled={count <= 0}
+                              >
+                                <i className="bi bi-dash-circle"></i>
+                              </button>
+                              <span className="adjustment-count">{count}</span>
+                              <button 
+                                className="adjustment-btn" 
+                                onClick={() => handleActivityCountChange('rooms', room, 1)}
+                              >
+                                <i className="bi bi-plus-circle"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="col-md-6">
+                    <div className="adjustment-card">
+                      <h4 className="adjustment-card-title">Additional Activities</h4>
+                      <div className="adjustment-items">
+                        {activityCounts.activities && Object.entries(activityCounts.activities).map(([activity, isSelected]) => (
+                          <div className="adjustment-item" key={activity}>
+                            <span className="adjustment-item-label">
+                              {activity.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                            </span>
+                            <div className="adjustment-toggle">
+                              <div 
+                                className={`toggle-switch ${isSelected ? 'active' : ''}`}
+                                onClick={() => handleActivityCountChange('activities', activity, 0)}
+                              >
+                                <div className="toggle-slider"></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="adjustment-actions">
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={handleGenerateFinalQuote}
+                  >
+                    <i className="bi bi-check-circle me-2"></i>
+                    Generate Final Quote
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Results Section */}
         {analysis && !showUserForm && !showAmendQuoteForm && (
           <section className="results-section">
@@ -1420,7 +1518,7 @@ function App() {
                   <div className="action-buttons">
                     <button
                       className="btn btn-primary"
-                      onClick={generateFinalQuote}
+                      onClick={handleGenerateFinalQuote}
                     >
                       <i className="bi bi-check-circle me-2"></i>
                       Generate Quote
