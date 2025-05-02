@@ -172,6 +172,74 @@ function App() {
     }
   };
 
+  // Extract frames from video for the new two-step process
+  const extractFramesFromVideo = async (videoFile) => {
+    try {
+      console.log('Starting frame extraction from video...');
+      
+      // Get video duration if not already set
+      if (!duration) {
+        const videoElement = document.createElement('video');
+        videoElement.src = URL.createObjectURL(videoFile);
+        
+        await new Promise((resolve) => {
+          videoElement.onloadedmetadata = () => {
+            setDuration(videoElement.duration);
+            resolve();
+          };
+        });
+      }
+      
+      // Write the video file to FFmpeg's virtual file system
+      ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(videoFile));
+      
+      console.log('Video file written to FFmpeg filesystem');
+
+      // Calculate how many frames to extract (limit to 10 frames)
+      const frameCount = 10;
+      const frameRate = frameCount / (duration || 30); // Default to 30s if duration not available
+
+      // Run FFmpeg command to extract frames
+      await ffmpeg.run(
+        '-i', 'input.mp4',
+        '-vf', `fps=${frameRate}`,
+        '-vsync', 'vfr',
+        '-q:v', '2',
+        '-f', 'image2',
+        'frame_%03d.jpg'
+      );
+      
+      console.log('FFmpeg frame extraction completed');
+
+      // Read the extracted frames
+      const frames = [];
+      let i = 1;
+
+      while (true) {
+        try {
+          const filename = `frame_${String(i).padStart(3, '0')}.jpg`;
+          const data = ffmpeg.FS('readFile', filename);
+          const blob = new Blob([data.buffer], { type: 'image/jpeg' });
+          frames.push({
+            name: filename,
+            blob: blob,
+            url: URL.createObjectURL(blob)
+          });
+          i++;
+        } catch (error) {
+          // No more frames
+          break;
+        }
+      }
+
+      console.log(`Successfully extracted ${frames.length} frames from video`);
+      return frames;
+    } catch (error) {
+      console.error('Error extracting frames:', error);
+      throw new Error(`Frame extraction failed: ${error.message}`);
+    }
+  };
+
   // Modified function to include cleaning context in the API request
   const analyzeImages = async (imageFiles) => {
     try {
@@ -651,7 +719,7 @@ function App() {
   };
 
   const handleSubmit = async () => {
-    if (!video && !recordedChunks.length) {
+    if (!video && recordedChunks.length === 0) {
       alert('Please select or record a video first.');
       return;
     }
@@ -665,14 +733,23 @@ function App() {
     }, 5000));
 
     try {
+      console.log('Starting video processing...');
+      
+      // Create video file from recorded chunks if needed
+      const videoFile = video || new File(
+        [new Blob(recordedChunks, { type: 'video/webm' })], 
+        `recording_${new Date().getTime()}.webm`, 
+        { type: 'video/webm' }
+      );
+      
       // Extract frames from the video
-      const frames = await extractFramesFromVideo(video || new File([new Blob(recordedChunks, { type: 'video/webm' })], `recording_${new Date().getTime()}.webm`, { type: 'video/webm' }));
+      const frames = await extractFramesFromVideo(videoFile);
       console.log(`Extracted ${frames.length} frames from video`);
 
       // Create a FormData object to send the frames
       const formData = new FormData();
-      frames.forEach((frame, index) => {
-        formData.append('images', frame.blob, `frame_${index}.jpg`);
+      frames.forEach((frame) => {
+        formData.append('images', frame.blob, frame.name);
       });
 
       // Add cleaning context if provided
@@ -690,8 +767,9 @@ function App() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to analyze video');
+        const errorText = await response.text();
+        console.error('API response error:', response.status, errorText);
+        throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
       }
 
       const data = await response.json();

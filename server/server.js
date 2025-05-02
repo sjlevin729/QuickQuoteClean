@@ -56,9 +56,24 @@ if (process.env.NODE_ENV === 'production') {
 console.log('Serving static files from public directory');
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Configure multer for image uploads (memory storage for OpenAI processing)
-const imageStorage = multer.memoryStorage();
-const imageUpload = multer({ storage: imageStorage });
+// Configure multer for image uploads
+const imageStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  }
+});
+
+const imageUpload = multer({ 
+  storage: imageStorage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+});
 
 // Configure multer for video uploads (disk storage for local saving)
 const videoDir = path.join(__dirname, '..', 'uploads', 'videos');
