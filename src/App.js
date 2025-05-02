@@ -41,6 +41,9 @@ function App() {
   const [showThankYouModal, setShowThankYouModal] = useState(false);
   const [cleaningContext, setCleaningContext] = useState('');
   const [duration, setDuration] = useState(0);
+  const [initialAnalysis, setInitialAnalysis] = useState(null);
+  const [activityCounts, setActivityCounts] = useState(null);
+  const [showAdjustmentUI, setShowAdjustmentUI] = useState(false);
   const [showAmendQuoteForm, setShowAmendQuoteForm] = useState(false);
   const [amendedCleaningContext, setAmendedCleaningContext] = useState('');
   const [isGeneratingAmendedQuote, setIsGeneratingAmendedQuote] = useState(false);
@@ -348,6 +351,7 @@ function App() {
       // Hide the amend form
       setShowAmendQuoteForm(false);
       setIsGeneratingAmendedQuote(false);
+      setShowAdjustmentUI(true);
 
     } catch (error) {
       console.error('Error generating amended quote:', error);
@@ -474,7 +478,8 @@ function App() {
           quoteId,
           quoteText: analysis,
           userInfo,
-          cleaningContext
+          cleaningContext,
+          activityCounts
         }),
       });
 
@@ -643,6 +648,152 @@ function App() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleSubmit = async () => {
+    if (!video && !recordedChunks.length) {
+      alert('Please select or record a video first.');
+      return;
+    }
+
+    setIsProcessing(true);
+    setCurrentStep(2);
+    setAnalysis('');
+    setLoadingMessage(getRandomLoadingMessage());
+    setLoadingMessageInterval(setInterval(() => {
+      setLoadingMessage(getRandomLoadingMessage());
+    }, 5000));
+
+    try {
+      // Extract frames from the video
+      const frames = await extractFramesFromVideo(video || new File([new Blob(recordedChunks, { type: 'video/webm' })], `recording_${new Date().getTime()}.webm`, { type: 'video/webm' }));
+      console.log(`Extracted ${frames.length} frames from video`);
+
+      // Create a FormData object to send the frames
+      const formData = new FormData();
+      frames.forEach((frame, index) => {
+        formData.append('images', frame.blob, `frame_${index}.jpg`);
+      });
+
+      // Add cleaning context if provided
+      if (cleaningContext.trim()) {
+        formData.append('context', cleaningContext);
+      }
+
+      // Log the request details
+      console.log('Sending API request to:', '/api/analyze');
+      console.log('With context:', cleaningContext ? 'Yes' : 'No');
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to analyze video');
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to analyze video');
+      }
+
+      // Set the initial analysis and activity counts
+      setInitialAnalysis(data.initialAnalysis);
+      setActivityCounts(data.initialAnalysis);
+      setQuoteId(data.quoteId);
+      
+      // Show the adjustment UI
+      setShowAdjustmentUI(true);
+      setIsProcessing(false);
+      clearInterval(loadingMessageInterval);
+      setLoadingMessageInterval(null);
+
+    } catch (error) {
+      console.error('Error processing video:', error);
+      setError(`Error: ${error.message}`);
+      setIsProcessing(false);
+      clearInterval(loadingMessageInterval);
+      setLoadingMessageInterval(null);
+    }
+  };
+
+  // Handle activity count adjustment
+  const handleActivityCountChange = (category, item, change) => {
+    setActivityCounts(prev => {
+      const newCounts = JSON.parse(JSON.stringify(prev)); // Deep clone
+      
+      if (category === 'rooms') {
+        // Don't allow negative room counts
+        const newCount = Math.max(0, newCounts.rooms[item] + change);
+        newCounts.rooms[item] = newCount;
+      } else if (category === 'activities') {
+        // Toggle boolean activities
+        newCounts.activities[item] = !newCounts.activities[item];
+      }
+      
+      return newCounts;
+    });
+  };
+
+  // Generate final quote with adjusted activity counts
+  const generateFinalQuote = async () => {
+    setIsProcessing(true);
+    setLoadingMessage(getRandomLoadingMessage());
+    setLoadingMessageInterval(setInterval(() => {
+      setLoadingMessage(getRandomLoadingMessage());
+    }, 5000));
+
+    try {
+      const response = await fetch('/api/generate-quote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cleaningContext,
+          activityCounts,
+          quoteId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate quote');
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to generate quote');
+      }
+
+      setAnalysis(data.quote);
+      setCurrentStep(3);
+      setShowAdjustmentUI(false);
+      
+    } catch (error) {
+      console.error('Error generating quote:', error);
+      setError(`Error: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+      clearInterval(loadingMessageInterval);
+      setLoadingMessageInterval(null);
+    }
+  };
+
+  // Handle amend quote button click
+  const handleAmendQuote = () => {
+    if (initialAnalysis) {
+      // If we have initial analysis, go back to adjustment UI
+      setShowAdjustmentUI(true);
+      setCurrentStep(2);
+    } else {
+      // For backward compatibility or if coming from an older quote
+      setShowAmendQuoteForm(true);
+    }
   };
 
   return (
@@ -877,7 +1028,7 @@ function App() {
                   <div className="action-buttons">
                     <button
                       className="btn btn-primary"
-                      onClick={processVideoAndGetQuote}
+                      onClick={handleSubmit}
                     >
                       <i className="bi bi-magic me-2"></i>
                       Get Cleaning Quote
@@ -932,7 +1083,7 @@ function App() {
               </button>
               <button
                 className="btn btn-secondary"
-                onClick={() => setShowAmendQuoteForm(true)}
+                onClick={handleAmendQuote}
               >
                 <i className="bi bi-pencil me-2"></i>
                 Amend Quote
@@ -1054,6 +1205,110 @@ function App() {
                 <button type="submit" className="btn btn-primary">Submit Request</button>
               </div>
             </form>
+          </section>
+        )}
+
+        {/* Activity Adjustment UI */}
+        {showAdjustmentUI && initialAnalysis && (
+          <section className="adjustment-section">
+            <div className="container">
+              <div className="adjustment-container">
+                <div className="adjustment-card">
+                  <h3 className="adjustment-title">Adjust Cleaning Activities</h3>
+                  <p className="adjustment-description">
+                    Based on your video, we've identified the following rooms and activities. 
+                    Please adjust the quantities as needed to get an accurate quote.
+                  </p>
+                  
+                  <div className="summary-box">
+                    <h4>Space Summary</h4>
+                    <p>{initialAnalysis.summary}</p>
+                  </div>
+
+                  <div className="adjustment-groups">
+                    <div className="adjustment-group">
+                      <h4>Rooms to Clean</h4>
+                      <div className="adjustment-items">
+                        {Object.entries(activityCounts.rooms).map(([room, count]) => (
+                          <div className="adjustment-item" key={room}>
+                            <span className="item-label">
+                              {room
+                                .replace(/([A-Z])/g, ' $1')
+                                .replace(/^./, str => str.toUpperCase())
+                                .replace('Rooms', 'Room(s)')}
+                            </span>
+                            <div className="quantity-control">
+                              <button 
+                                className="quantity-btn" 
+                                onClick={() => handleActivityCountChange('rooms', room, -1)}
+                                disabled={count <= 0}
+                              >
+                                <i className="bi bi-dash"></i>
+                              </button>
+                              <span className="quantity-value">{count}</span>
+                              <button 
+                                className="quantity-btn" 
+                                onClick={() => handleActivityCountChange('rooms', room, 1)}
+                              >
+                                <i className="bi bi-plus"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="adjustment-group">
+                      <h4>Additional Activities</h4>
+                      <div className="adjustment-items">
+                        {Object.entries(activityCounts.activities).map(([activity, included]) => (
+                          <div className="adjustment-item" key={activity}>
+                            <span className="item-label">
+                              {activity
+                                .replace(/([A-Z])/g, ' $1')
+                                .replace(/^./, str => str.toUpperCase())}
+                            </span>
+                            <div className="toggle-control">
+                              <button 
+                                className={`toggle-btn ${included ? 'active' : ''}`}
+                                onClick={() => handleActivityCountChange('activities', activity)}
+                              >
+                                {included ? 'Yes' : 'No'}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="action-buttons">
+                    <button
+                      className="btn btn-primary"
+                      onClick={generateFinalQuote}
+                    >
+                      <i className="bi bi-check-circle me-2"></i>
+                      Generate Quote
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setVideoUrl('');
+                        setVideo(null);
+                        setRecordedChunks([]);
+                        setCurrentStep(0);
+                        setShowAdjustmentUI(false);
+                        setInitialAnalysis(null);
+                        setActivityCounts(null);
+                      }}
+                    >
+                      <i className="bi bi-arrow-left me-2"></i>
+                      Start Over
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
         )}
       </main>

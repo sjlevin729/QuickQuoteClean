@@ -49,49 +49,83 @@ async function getGoogleSheetsClient() {
   }
 }
 
-// Add a new quote to the Google Sheet
+/**
+ * Adds a quote to the Google Sheet
+ * @param {Object} quoteData - The quote data to add
+ * @param {string} quoteData.quoteId - The unique ID of the quote
+ * @param {string} quoteData.timestamp - ISO timestamp of when the quote was created
+ * @param {Object} quoteData.userInfo - User information (name, email, phone)
+ * @param {string} quoteData.cleaningContext - Additional context provided by the user
+ * @param {string} quoteData.activityCounts - JSON string of the activity counts
+ * @param {string} quoteData.analysis - The full quote text
+ * @param {string} quoteData.estimatedPrice - The estimated price extracted from the quote
+ * @returns {Promise<void>}
+ */
 async function addQuoteToSheet(quoteData) {
   try {
-    // Get the Google Sheets client
     const sheets = await getGoogleSheetsClient();
     
-    // Get the spreadsheet ID from environment variable
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-    if (!spreadsheetId) {
-      throw new Error('GOOGLE_SHEET_ID environment variable not set');
+    // Format user info
+    const userInfoStr = quoteData.userInfo ? 
+      `Name: ${quoteData.userInfo.name || 'N/A'}, Email: ${quoteData.userInfo.email || 'N/A'}, Phone: ${quoteData.userInfo.phone || 'N/A'}` : 
+      'No user info provided';
+    
+    // Parse activity counts to create a readable summary
+    let activitySummary = '';
+    try {
+      if (quoteData.activityCounts) {
+        const counts = JSON.parse(quoteData.activityCounts);
+        
+        // Format rooms
+        if (counts.rooms) {
+          activitySummary += 'Rooms: ';
+          const roomEntries = Object.entries(counts.rooms)
+            .filter(([_, count]) => count > 0)
+            .map(([room, count]) => `${room}(${count})`)
+            .join(', ');
+          activitySummary += roomEntries || 'None';
+          activitySummary += '; ';
+        }
+        
+        // Format activities
+        if (counts.activities) {
+          activitySummary += 'Activities: ';
+          const activityEntries = Object.entries(counts.activities)
+            .filter(([_, included]) => included)
+            .map(([activity]) => activity)
+            .join(', ');
+          activitySummary += activityEntries || 'None';
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing activity counts:', error);
+      activitySummary = 'Error parsing activity counts';
     }
     
-    // Format the data for Google Sheets
-    // Adjust these fields based on your actual data structure
+    // Prepare row data
     const values = [
       [
         quoteData.quoteId,
-        quoteData.timestamp || new Date().toISOString(),
-        quoteData.userInfo.name,
-        quoteData.userInfo.email,
-        quoteData.userInfo.phone,
-        quoteData.userInfo.address,
-        quoteData.userInfo.notes || '',
-        JSON.stringify(quoteData.cleaningServices),
+        quoteData.timestamp,
+        userInfoStr,
         quoteData.cleaningContext || '',
-        quoteData.analysis,
+        activitySummary,
+        quoteData.analysis || '',
         quoteData.estimatedPrice || 'Not specified'
       ]
     ];
     
-    // Append the data to the sheet
-    const response = await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: 'Sheet1!A:K', // Adjust range based on your sheet structure
+    // Append data to the sheet
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: 'Sheet1!A:G',  // Updated to include the new activity counts column
       valueInputOption: 'RAW',
-      insertDataOption: 'INSERT_ROWS',
       resource: {
         values
       }
     });
     
-    console.log('Quote added to Google Sheet:', response.data);
-    return response.data;
+    console.log(`Quote ${quoteData.quoteId} added to Google Sheet`);
   } catch (error) {
     console.error('Error adding quote to Google Sheet:', error);
     throw error;

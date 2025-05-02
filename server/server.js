@@ -7,7 +7,10 @@ const { OpenAI } = require('openai');
 const dotenv = require('dotenv');
 const db = require('./database/db');
 const { addQuoteToSheet } = require('./googleSheets');
-const { formatPrompt } = require('./prompt-template');
+const { 
+  formatInitialAnalysisPrompt, 
+  formatFinalQuotePrompt 
+} = require('./prompt-template');
 
 // Load environment variables
 dotenv.config();
@@ -89,23 +92,11 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// API endpoint to analyze images
-app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res) => {
+// API endpoint for analyzing images
+app.post('/api/analyze', imageUpload.array('images'), async (req, res) => {
   try {
-    // Check if OpenAI API key is available
-    if (!process.env.OPENAI_API_KEY) {
-      console.error('OpenAI API key is not configured');
-      return res.status(500).json({ error: 'OpenAI API key is not configured. Please set the OPENAI_API_KEY environment variable.' });
-    }
-
-    // Check if images were uploaded
-    if (!req.files || req.files.length === 0) {
-      console.error('No images were uploaded');
-      return res.status(400).json({ error: 'No images were uploaded.' });
-    }
-
     console.log(`Received ${req.files.length} images for analysis`);
-
+    
     // Get cleaning context if provided
     const cleaningContext = req.body.context || '';
     console.log('Cleaning context provided:', cleaningContext ? 'Yes' : 'No');
@@ -124,35 +115,28 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
       
       return a.originalname.localeCompare(b.originalname);
     });
-
-    console.log(`Sorted ${sortedImages.length} images for analysis`);
     
-    // Limit the number of images to avoid exceeding API limits
-    const maxImages = 10; // Reduce from 50 to 10 to avoid payload size issues
-    const limitedImages = sortedImages.length > maxImages 
-      ? sortedImages.filter((_, index) => index % Math.ceil(sortedImages.length / maxImages) === 0).slice(0, maxImages)
-      : sortedImages;
-    
-    console.log(`Using ${limitedImages.length} images for API request (from ${sortedImages.length} total)`);
-
-    // Prepare images for OpenAI API
-    const imageContents = limitedImages.map(file => {
-      // Convert the buffer to base64
-      const base64Image = file.buffer.toString('base64');
+    // Prepare image content for OpenAI API
+    const imageContents = sortedImages.map(file => {
+      // Read the file as base64
+      const base64Image = fs.readFileSync(file.path, { encoding: 'base64' });
+      
+      // Delete the temporary file
+      fs.unlinkSync(file.path);
+      
       return {
         type: "image_url",
         image_url: {
-          url: `data:${file.mimetype};base64,${base64Image}`
+          url: `data:image/jpeg;base64,${base64Image}`
         }
       };
     });
 
-    // Construct the prompt with cleaning context
-    const promptText = formatPrompt(cleaningContext);
+    // Construct the initial analysis prompt with cleaning context
+    const promptText = formatInitialAnalysisPrompt(cleaningContext);
     
-    console.log('Sending request to OpenAI API...');
+    console.log('Sending initial analysis request to OpenAI API...');
     
-    // Call OpenAI API
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -166,92 +150,138 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
       ],
       max_tokens: 4096,
     });
-
-    console.log('Received response from OpenAI API');
-
-    // Generate a unique quote ID
-    const timestamp = new Date().getTime();
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    const quoteId = `QQ-${timestamp.toString().slice(-6)}-${randomStr}`;
-
-    // Send the response back to the client
-    res.json({ 
-      analysis: response.choices[0].message.content,
-      quoteId: quoteId
-    });
-
-  } catch (error) {
-    console.error('Error analyzing images:', error);
-    // Log more details about the error
-    if (error.response) {
-      console.error('OpenAI API error details:', {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data
+    
+    const analysis = response.choices[0].message.content.trim();
+    console.log('Initial analysis received from OpenAI API');
+    
+    // Parse the JSON response
+    let parsedAnalysis;
+    try {
+      parsedAnalysis = JSON.parse(analysis);
+      
+      // Validate the structure of the parsed JSON
+      if (!parsedAnalysis.summary || !parsedAnalysis.rooms || !parsedAnalysis.activities) {
+        throw new Error('Invalid response structure');
+      }
+      
+      // Send the parsed analysis to the client
+      res.json({
+        success: true,
+        initialAnalysis: parsedAnalysis,
+        quoteId: `QQ${Math.floor(Math.random() * 10000)}`
+      });
+    } catch (error) {
+      console.error('Error parsing OpenAI response:', error);
+      console.error('Raw response:', analysis);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to parse the analysis response',
+        details: error.message
       });
     }
-    res.status(500).json({ error: error.message || 'An error occurred during image analysis.' });
+  } catch (error) {
+    console.error('Error during image analysis:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to analyze images',
+      details: error.message
+    });
+  }
+});
+
+// API endpoint for generating the final quote
+app.post('/api/generate-quote', express.json(), async (req, res) => {
+  try {
+    const { cleaningContext, activityCounts, quoteId } = req.body;
+    
+    if (!activityCounts || !activityCounts.rooms || !activityCounts.activities) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing or invalid activity counts'
+      });
+    }
+    
+    console.log('Generating final quote with adjusted activity counts');
+    console.log('Activity counts:', JSON.stringify(activityCounts));
+    
+    // Construct the final quote prompt
+    const promptText = formatFinalQuotePrompt(cleaningContext, activityCounts);
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: promptText
+        }
+      ],
+      max_tokens: 4096,
+    });
+    
+    const quote = response.choices[0].message.content.trim();
+    console.log('Final quote received from OpenAI API');
+    
+    res.json({
+      success: true,
+      quote,
+      quoteId: quoteId || `QQ${Math.floor(Math.random() * 10000)}`
+    });
+  } catch (error) {
+    console.error('Error generating final quote:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate quote',
+      details: error.message
+    });
   }
 });
 
 // API endpoint for saving quotes
 app.post('/api/save-quote', express.json(), async (req, res) => {
   try {
-    const { quoteId, quoteText, userInfo } = req.body;
+    const { quoteId, quoteText, userInfo, cleaningContext, activityCounts } = req.body;
     
     // Validate all required fields are present
     if (!quoteId || !quoteText) {
-      return res.status(400).json({ error: 'Quote ID and text are required' });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    if (!userInfo || !userInfo.name || !userInfo.email || !userInfo.phone) {
-      return res.status(400).json({ error: 'User information (name, email, phone) is required' });
-    }
-    
-    // Save the quote to the database
-    db.saveQuote(quoteId, quoteText);
-    
-    // Save user info
-    db.saveUserInfo(quoteId, userInfo);
-    
-    // Try to save to Google Sheets if configured
+    // Extract the estimated price from the quote text
+    const priceMatch = quoteText.match(/£(\d+)/);
+    const estimatedPrice = priceMatch ? priceMatch[1] : 'Not specified';
+
+    console.log(`Saving quote ${quoteId} with estimated price £${estimatedPrice}`);
+
+    // Save to Google Sheets if configured
     try {
       if (process.env.GOOGLE_SHEET_ID) {
-        console.log('Saving quote to Google Sheets...');
+        console.log('Adding quote to Google Sheet...');
         
-        // Extract estimated price from the quote text if possible
-        let estimatedPrice = 'Not specified';
-        const priceMatch = quoteText.match(/£(\d+(\.\d+)?)/);
-        if (priceMatch) {
-          estimatedPrice = priceMatch[0];
-        }
-        
-        // Prepare data for Google Sheets
-        const sheetData = {
+        // Format the data for Google Sheets
+        const quoteData = {
           quoteId,
           timestamp: new Date().toISOString(),
           userInfo,
+          cleaningContext: cleaningContext || '',
+          activityCounts: activityCounts ? JSON.stringify(activityCounts) : '{}',
           analysis: quoteText,
           estimatedPrice
         };
         
-        // Add to Google Sheets
-        await addQuoteToSheet(sheetData);
-        console.log('Quote successfully added to Google Sheets');
+        await addQuoteToSheet(quoteData);
+        console.log('Quote added to Google Sheet successfully');
+      } else {
+        console.log('Google Sheet ID not configured, skipping sheet update');
       }
     } catch (sheetError) {
-      // Log the error but don't fail the request
-      console.error('Error saving to Google Sheets (continuing anyway):', sheetError);
+      console.error('Error adding quote to Google Sheet:', sheetError);
+      // Continue with the response even if Google Sheets fails
     }
-    
-    res.json({ 
-      success: true, 
-      quoteId,
-      message: 'Quote and user information saved successfully' 
-    });
+
+    res.json({ success: true });
   } catch (error) {
     console.error('Error saving quote:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to save quote' });
   }
 });
 

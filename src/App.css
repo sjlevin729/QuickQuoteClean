@@ -970,3 +970,173 @@ body {
 @keyframes spinner-border {
   to { transform: rotate(360deg); }
 }
+
+/* Activity Adjustment UI */
+.adjustment-section {
+  padding: 2rem 0;
+  background-color: var(--bg-light);
+}
+
+.adjustment-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.adjustment-card {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.adjustment-title {
+  color: var(--primary-color);
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.adjustment-description {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-secondary);
+}
+
+.summary-box {
+  background-color: var(--bg-light);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border-left: 4px solid var(--primary-color);
+}
+
+.summary-box h4 {
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.summary-box p {
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+.adjustment-groups {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .adjustment-groups {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.adjustment-group {
+  background-color: var(--bg-light);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.adjustment-group h4 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.adjustment-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.adjustment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.item-label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quantity-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.quantity-btn:hover {
+  background-color: var(--primary-dark);
+}
+
+.quantity-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.quantity-value {
+  min-width: 30px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.toggle-control {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-btn {
+  padding: 0.4rem 1rem;
+  border: 2px solid var(--primary-color);
+  background-color: white;
+  color: var(--primary-color);
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.toggle-btn:hover {
+  background-color: var(--primary-light);
+  color: white;
+}
+
+/* Update the existing action-buttons class */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.action-buttons .btn {
+  min-width: 150px;
+}
