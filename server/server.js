@@ -7,6 +7,7 @@ const { OpenAI } = require('openai');
 const dotenv = require('dotenv');
 const db = require('./database/db');
 const { addQuoteToSheet } = require('./googleSheets');
+const { formatPrompt } = require('./prompt-template');
 
 // Load environment variables
 dotenv.config();
@@ -161,79 +162,7 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
     });
 
     // Construct the prompt with cleaning context and services
-    let promptText = "You are a professional cleaning service estimator. Create a cleaning quote based on these images that will be shown directly to the customer. Follow these guidelines:";
-    
-    promptText += "\n\n1. Start with a brief, tactful summary of the space shown in the video, including its type, size, and condition. Do not use language that could offend the customer about their living arrangements.";
-    
-    // Add customer context to the prompt
-    promptText += "\n\n2. The customer provided this additional context: " + (cleaningContext || "No additional context provided");
-    
-    // Add selected and excluded services to the prompt
-    promptText += "\n\n3. The customer has specifically requested the following services:";
-    const includedServices = Object.entries(selectedServices)
-      .filter(([_, selected]) => selected)
-      .map(([service]) => {
-        // Convert camelCase to readable format with descriptions
-        const serviceDescriptions = {
-          generalCleaning: "General Cleaning (dusting surfaces, removing cobwebs, cleaning light fixtures)",
-          deepCleaning: "Deep Cleaning (detailed cleaning of all surfaces, baseboards, crown molding)",
-          kitchenBathroom: "Kitchen & Bathroom Cleaning (countertops, sinks, appliances, toilets, showers)",
-          floorCleaning: "Floor Cleaning (vacuuming, mopping, spot cleaning)",
-          windowsCleaning: "Windows Cleaning (interior windows, glass surfaces, mirrors)",
-          organizingDecluttering: "Organizing & Decluttering (arranging items, removing clutter)"
-        };
-        
-        return serviceDescriptions[service] || service
-          .replace(/([A-Z])/g, ' $1')
-          .replace(/^./, str => str.toUpperCase());
-      });
-    
-    if (includedServices.length > 0) {
-      includedServices.forEach(service => {
-        promptText += `\n   - ${service}`;
-      });
-    } else {
-      promptText += "\n   - General cleaning services";
-    }
-    
-    // Add excluded services
-    const excludedServices = Object.entries(selectedServices)
-      .filter(([_, selected]) => !selected)
-      .map(([service]) => {
-        // Convert camelCase to readable format with descriptions
-        const serviceDescriptions = {
-          generalCleaning: "General Cleaning (dusting surfaces, removing cobwebs, cleaning light fixtures)",
-          deepCleaning: "Deep Cleaning (detailed cleaning of all surfaces, baseboards, crown molding)",
-          kitchenBathroom: "Kitchen & Bathroom Cleaning (countertops, sinks, appliances, toilets, showers)",
-          floorCleaning: "Floor Cleaning (vacuuming, mopping, spot cleaning)",
-          windowsCleaning: "Windows Cleaning (interior windows, glass surfaces, mirrors)",
-          organizingDecluttering: "Organizing & Decluttering (arranging items, removing clutter)"
-        };
-        
-        return serviceDescriptions[service] || service
-          .replace(/([A-Z])/g, ' $1')
-          .replace(/^./, str => str.toUpperCase());
-      });
-    
-    if (excludedServices.length > 0) {
-      promptText += "\n\n4. The customer has specifically excluded these services (DO NOT include these in the quote):";
-      excludedServices.forEach(service => {
-        promptText += `\n   - ${service}`;
-      });
-    }
-    
-    promptText += "\n\n5. List each cleaning activity that would be undertaken with a specific time allocation for each task. ONLY include the services that the customer has requested.";
-    
-    promptText += "\n\n6. End with a total time calculation and the final price quote using a fixed rate of £15 per hour.";
-    
-    promptText += "\n\nIMPORTANT FORMATTING RULES:";
-    promptText += "\n- Do NOT include any introduction or sign-off";
-    promptText += "\n- Do NOT mention that this was created by AI";
-    promptText += "\n- Do NOT use markdown formatting like '#', '*', or '**'";
-    promptText += "\n- Use plain text formatting only";
-    promptText += "\n- Use simple line breaks and spacing for organization";
-    promptText += "\n- Start directly with the space summary";
-    promptText += "\n- Use a clean, professional presentation suitable for a customer";
+    const promptText = formatPrompt(cleaningContext, selectedServices);
     
     console.log('Sending request to OpenAI API...');
     
