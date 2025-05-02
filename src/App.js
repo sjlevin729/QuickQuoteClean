@@ -1464,108 +1464,21 @@ function App() {
           </section>
         )}
 
-        {/* Activity Adjustment UI */}
-        {showAdjustmentUI && initialAnalysis && (
-          <section className="adjustment-section">
-            <div className="container">
-              <div className="adjustment-container">
-                <div className="adjustment-card">
-                  <h3 className="adjustment-title">Adjust Cleaning Activities</h3>
-                  <p className="adjustment-description">
-                    Based on your video, we've identified the following rooms and activities. 
-                    Please adjust the quantities as needed to get an accurate quote.
-                  </p>
-                  
-                  <div className="summary-box">
-                    <h4>Space Summary</h4>
-                    <p>{initialAnalysis.summary}</p>
-                  </div>
-
-                  <div className="adjustment-groups">
-                    <div className="adjustment-group">
-                      <h4>Rooms to Clean</h4>
-                      <div className="adjustment-items">
-                        {Object.entries(activityCounts.rooms).map(([room, count]) => (
-                          <div className="adjustment-item" key={room}>
-                            <span className="item-label">
-                              {room
-                                .replace(/([A-Z])/g, ' $1')
-                                .replace(/^./, str => str.toUpperCase())
-                                .replace('Rooms', 'Room(s)')}
-                            </span>
-                            <div className="quantity-control">
-                              <button 
-                                className="quantity-btn" 
-                                onClick={() => handleActivityCountChange('rooms', room, -1)}
-                                disabled={count <= 0}
-                              >
-                                <i className="bi bi-dash"></i>
-                              </button>
-                              <span className="quantity-value">{count}</span>
-                              <button 
-                                className="quantity-btn" 
-                                onClick={() => handleActivityCountChange('rooms', room, 1)}
-                              >
-                                <i className="bi bi-plus"></i>
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="adjustment-group">
-                      <h4>Additional Activities</h4>
-                      <div className="adjustment-items">
-                        {Object.entries(activityCounts.activities).map(([activity, included]) => (
-                          <div className="adjustment-item" key={activity}>
-                            <span className="item-label">
-                              {activity
-                                .replace(/([A-Z])/g, ' $1')
-                                .replace(/^./, str => str.toUpperCase())}
-                            </span>
-                            <div className="toggle-control">
-                              <button 
-                                className={`toggle-btn ${included ? 'active' : ''}`}
-                                onClick={() => handleActivityCountChange('activities', activity)}
-                              >
-                                {included ? 'Yes' : 'No'}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="action-buttons">
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleGenerateFinalQuote}
-                    >
-                      <i className="bi bi-check-circle me-2"></i>
-                      Generate Quote
-                    </button>
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => {
-                        setVideoUrl('');
-                        setVideo(null);
-                        setRecordedChunks([]);
-                        setCurrentStep(0);
-                        setShowAdjustmentUI(false);
-                        setInitialAnalysis(null);
-                        setActivityCounts(null);
-                      }}
-                    >
-                      <i className="bi bi-arrow-left me-2"></i>
-                      Start Over
-                    </button>
-                  </div>
-                </div>
+        {/* Thank You Modal */}
+        {showThankYouModal && (
+          <div className="modal-backdrop thank-you-modal">
+            <div className="modal-content">
+              <div className="thank-you-icon">
+                <i className="bi bi-check-circle"></i>
               </div>
+              <h3 className="thank-you-title">Thank You!</h3>
+              <p className="thank-you-message">Your quote request has been submitted successfully. We'll contact you shortly.</p>
+              {quoteId && (
+                <p className="thank-you-message">Reference: {quoteId}</p>
+              )}
+              <button className="btn btn-primary" onClick={() => window.location.reload()}>Get Another Quote</button>
             </div>
-          </section>
+          </div>
         )}
       </main>
 
@@ -1586,23 +1499,6 @@ function App() {
           &copy; {new Date().getFullYear()} QuickQuoteClean. All rights reserved.
         </div>
       </footer>
-
-      {/* Thank You Modal */}
-      {showThankYouModal && (
-        <div className="modal-backdrop thank-you-modal">
-          <div className="modal-content">
-            <div className="thank-you-icon">
-              <i className="bi bi-check-circle"></i>
-            </div>
-            <h3 className="thank-you-title">Thank You!</h3>
-            <p className="thank-you-message">Your quote request has been submitted successfully. We'll contact you shortly.</p>
-            {quoteId && (
-              <p className="thank-you-message">Reference: {quoteId}</p>
-            )}
-            <button className="btn btn-primary" onClick={() => window.location.reload()}>Get Another Quote</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
