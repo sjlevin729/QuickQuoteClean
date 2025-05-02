@@ -48,6 +48,27 @@ function App() {
     windowsCleaning: false,
     organizingDecluttering: false
   });
+  const [showAmendQuoteForm, setShowAmendQuoteForm] = useState(false);
+  const [amendedCleaningContext, setAmendedCleaningContext] = useState('');
+  const [amendedCleaningServices, setAmendedCleaningServices] = useState({});
+  const [isGeneratingAmendedQuote, setIsGeneratingAmendedQuote] = useState(false);
+
+  // Initialize amended services when showing the amend form
+  useEffect(() => {
+    if (showAmendQuoteForm) {
+      setAmendedCleaningServices({...cleaningServices});
+      setAmendedCleaningContext(cleaningContext);
+    }
+  }, [showAmendQuoteForm]);
+
+  // Handle checkbox change for amended services
+  const handleAmendedServiceChange = (e) => {
+    const { name, checked } = e.target;
+    setAmendedCleaningServices(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+  };
 
   // Handle checkbox change
   const handleServiceChange = (e) => {
@@ -244,6 +265,96 @@ function App() {
     } finally {
       setProcessing(false);
       setProcessingStep('');
+    }
+  };
+
+  // Generate an amended quote
+  const generateAmendedQuote = async () => {
+    try {
+      setIsGeneratingAmendedQuote(true);
+      setMessage('');
+      
+      const formData = new FormData();
+      
+      // Add the extracted images to the form data
+      if (extractedImagesRef.current.length === 0) {
+        throw new Error('No images available for analysis');
+      }
+      
+      // Limit the number of images to avoid payload size issues
+      const maxImages = 10;
+      const imageFiles = extractedImagesRef.current;
+      const limitedImages = imageFiles.length > maxImages 
+        ? imageFiles.filter((_, index) => index % Math.ceil(imageFiles.length / maxImages) === 0).slice(0, maxImages)
+        : imageFiles;
+      
+      // Add each image to the form data
+      limitedImages.forEach((image, index) => {
+        formData.append('images', image.blob, image.name);
+      });
+      
+      // Add amended cleaning context to the request if provided
+      if (amendedCleaningContext.trim()) {
+        formData.append('context', amendedCleaningContext);
+      }
+      
+      // Add amended selected cleaning services to the request
+      formData.append('services', JSON.stringify(amendedCleaningServices));
+      
+      // Log the request details
+      console.log('Sending amended quote request to:', API_URL);
+      console.log('With amended context:', amendedCleaningContext ? 'Yes' : 'No');
+      console.log('Amended selected services:', Object.entries(amendedCleaningServices)
+        .filter(([_, selected]) => selected)
+        .map(([service]) => service)
+        .join(', '));
+      
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API response error:', response.status, errorText);
+        throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      // Format the analysis text for better display
+      let formattedAnalysis = data.analysis;
+      
+      // Remove any remaining markdown formatting
+      formattedAnalysis = formattedAnalysis.replace(/#{1,6}\s/g, ''); // Remove headings
+      formattedAnalysis = formattedAnalysis.replace(/\*\*/g, ''); // Remove bold
+      formattedAnalysis = formattedAnalysis.replace(/\*/g, ''); // Remove italic
+      formattedAnalysis = formattedAnalysis.replace(/`/g, ''); // Remove code formatting
+      
+      // Convert markdown-style lists to plain text with proper spacing
+      formattedAnalysis = formattedAnalysis.replace(/^\s*[-*]\s/gm, '• '); // Convert list markers
+      
+      // Update state with the new quote
+      setAnalysis(formattedAnalysis);
+      setQuoteId(data.quoteId || `QQ${Math.floor(Math.random() * 10000)}`);
+      
+      // Update the original services and context with the amended ones
+      setCleaningServices({...amendedCleaningServices});
+      setCleaningContext(amendedCleaningContext);
+      
+      // Hide the amend form
+      setShowAmendQuoteForm(false);
+      setIsGeneratingAmendedQuote(false);
+      
+    } catch (error) {
+      console.error('Error generating amended quote:', error);
+      setMessage(`Failed to generate amended quote: ${error.message}`);
+      setMessageType('danger');
+      setIsGeneratingAmendedQuote(false);
     }
   };
 
@@ -673,16 +784,146 @@ function App() {
         )}
 
         {/* Results Section */}
-        {analysis && !showUserForm && (
+        {analysis && !showUserForm && !showAmendQuoteForm && (
           <section className="results-section">
             <h3 className="section-title">Your Cleaning Quote</h3>
             <div className="analysis-container">
               <pre className="analysis-text">{analysis}</pre>
             </div>
-            <div className="text-center mt-4">
+            <div className="action-buttons">
               <button className="btn btn-primary" onClick={() => setShowUserForm(true)}>
-                Request This Quote
+                <i className="bi bi-check-circle me-2"></i>
+                Accept Quote
               </button>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setShowAmendQuoteForm(true)}
+              >
+                <i className="bi bi-pencil me-2"></i>
+                Amend Quote
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Amend Quote Section */}
+        {showAmendQuoteForm && (
+          <section className="amend-quote-section">
+            <h3 className="section-title">Amend Your Quote</h3>
+            <div className="amend-quote-content">
+              <div className="form-group">
+                <label className="context-label" htmlFor="amended-cleaning-context">
+                  Amended Cleaning Requirements
+                </label>
+                <textarea
+                  id="amended-cleaning-context"
+                  className="context-textarea"
+                  placeholder="Tell us about any changes to your cleaning needs, preferences, or any areas that need special attention..."
+                  value={amendedCleaningContext}
+                  onChange={(e) => setAmendedCleaningContext(e.target.value)}
+                ></textarea>
+                <p className="context-helper">This information will help our AI provide a more accurate quote.</p>
+              </div>
+              
+              <div className="form-group">
+                <label className="context-label" htmlFor="amended-cleaning-services">
+                  Select Amended Cleaning Services
+                </label>
+                <p className="context-helper mb-3">
+                  Select any additional cleaning services you'd like included in your quote, even if they're not shown in the video. 
+                  This helps us provide a more accurate and comprehensive cleaning quote for your specific needs.
+                </p>
+                <div className="checkbox-group">
+                  <div className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      id="amended-general-cleaning"
+                      name="generalCleaning"
+                      checked={amendedCleaningServices.generalCleaning}
+                      onChange={handleAmendedServiceChange}
+                    />
+                    <label className="checkbox-label" htmlFor="amended-general-cleaning">General Cleaning</label>
+                  </div>
+                  <div className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      id="amended-deep-cleaning"
+                      name="deepCleaning"
+                      checked={amendedCleaningServices.deepCleaning}
+                      onChange={handleAmendedServiceChange}
+                    />
+                    <label className="checkbox-label" htmlFor="amended-deep-cleaning">Deep Cleaning</label>
+                  </div>
+                  <div className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      id="amended-kitchen-bathroom"
+                      name="kitchenBathroom"
+                      checked={amendedCleaningServices.kitchenBathroom}
+                      onChange={handleAmendedServiceChange}
+                    />
+                    <label className="checkbox-label" htmlFor="amended-kitchen-bathroom">Kitchen & Bathroom Cleaning</label>
+                  </div>
+                  <div className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      id="amended-floor-cleaning"
+                      name="floorCleaning"
+                      checked={amendedCleaningServices.floorCleaning}
+                      onChange={handleAmendedServiceChange}
+                    />
+                    <label className="checkbox-label" htmlFor="amended-floor-cleaning">Floor Cleaning</label>
+                  </div>
+                  <div className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      id="amended-windows-cleaning"
+                      name="windowsCleaning"
+                      checked={amendedCleaningServices.windowsCleaning}
+                      onChange={handleAmendedServiceChange}
+                    />
+                    <label className="checkbox-label" htmlFor="amended-windows-cleaning">Windows Cleaning</label>
+                  </div>
+                  <div className="checkbox-item">
+                    <input
+                      type="checkbox"
+                      id="amended-organizing-decluttering"
+                      name="organizingDecluttering"
+                      checked={amendedCleaningServices.organizingDecluttering}
+                      onChange={handleAmendedServiceChange}
+                    />
+                    <label className="checkbox-label" htmlFor="amended-organizing-decluttering">Organizing & Decluttering</label>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="action-buttons">
+                <button 
+                  className="btn btn-primary" 
+                  onClick={generateAmendedQuote}
+                  disabled={isGeneratingAmendedQuote}
+                >
+                  {isGeneratingAmendedQuote ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-magic me-2"></i>
+                      Generate Amended Quote
+                    </>
+                  )}
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowAmendQuoteForm(false)}
+                  disabled={isGeneratingAmendedQuote}
+                >
+                  <i className="bi bi-arrow-left me-2"></i>
+                  Cancel
+                </button>
+              </div>
             </div>
           </section>
         )}
