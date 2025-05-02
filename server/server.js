@@ -172,8 +172,17 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
     const includedServices = Object.entries(selectedServices)
       .filter(([_, selected]) => selected)
       .map(([service]) => {
-        // Convert camelCase to readable format
-        return service
+        // Convert camelCase to readable format with descriptions
+        const serviceDescriptions = {
+          generalCleaning: "General Cleaning (dusting surfaces, removing cobwebs, cleaning light fixtures)",
+          deepCleaning: "Deep Cleaning (detailed cleaning of all surfaces, baseboards, crown molding)",
+          kitchenBathroom: "Kitchen & Bathroom Cleaning (countertops, sinks, appliances, toilets, showers)",
+          floorCleaning: "Floor Cleaning (vacuuming, mopping, spot cleaning)",
+          windowsCleaning: "Windows Cleaning (interior windows, glass surfaces, mirrors)",
+          organizingDecluttering: "Organizing & Decluttering (arranging items, removing clutter)"
+        };
+        
+        return serviceDescriptions[service] || service
           .replace(/([A-Z])/g, ' $1')
           .replace(/^./, str => str.toUpperCase());
       });
@@ -190,8 +199,17 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
     const excludedServices = Object.entries(selectedServices)
       .filter(([_, selected]) => !selected)
       .map(([service]) => {
-        // Convert camelCase to readable format
-        return service
+        // Convert camelCase to readable format with descriptions
+        const serviceDescriptions = {
+          generalCleaning: "General Cleaning (dusting surfaces, removing cobwebs, cleaning light fixtures)",
+          deepCleaning: "Deep Cleaning (detailed cleaning of all surfaces, baseboards, crown molding)",
+          kitchenBathroom: "Kitchen & Bathroom Cleaning (countertops, sinks, appliances, toilets, showers)",
+          floorCleaning: "Floor Cleaning (vacuuming, mopping, spot cleaning)",
+          windowsCleaning: "Windows Cleaning (interior windows, glass surfaces, mirrors)",
+          organizingDecluttering: "Organizing & Decluttering (arranging items, removing clutter)"
+        };
+        
+        return serviceDescriptions[service] || service
           .replace(/([A-Z])/g, ' $1')
           .replace(/^./, str => str.toUpperCase());
       });
