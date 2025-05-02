@@ -844,6 +844,17 @@ function App() {
       
       // Show the adjustment UI
       setShowAdjustmentUI(true);
+      
+      // Hide video preview
+      setVideoUrl('');
+      
+      // Scroll to the adjustment UI after a short delay to ensure it's rendered
+      setTimeout(() => {
+        const adjustmentSection = document.querySelector('.adjustment-section');
+        if (adjustmentSection) {
+          adjustmentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
 
     } catch (error) {
       console.error('Error processing video:', error);
