@@ -1018,23 +1018,17 @@ function App() {
         {processing && (
           <section className="processing-section">
             <h3 className="processing-title">Generating Your Cleaning Quote</h3>
-            <div className="loading-message">{loadingMessage || "Analyzing your space and calculating the perfect cleaning plan..."}</div>
-            <div className="cleaning-animation-container">
-              <div className="cleaning-animation">
-                <div className="table-surface"></div>
-                <div className="hand">
-                  <div className="cloth"></div>
-                </div>
-                <div className="dirt-particles">
-                  <div className="dirt-particle p1"></div>
-                  <div className="dirt-particle p2"></div>
-                  <div className="dirt-particle p3"></div>
-                  <div className="dirt-particle p4"></div>
-                  <div className="dirt-particle p5"></div>
-                </div>
-              </div>
+            <div className="loading-message" style={{ fontSize: '1.2rem', color: '#5a6268', margin: '1rem 0 2rem', minHeight: '3.6rem', fontStyle: 'italic', maxWidth: '600px', lineHeight: '1.5', textAlign: 'center' }}>
+              {processingStep || "Analyzing your space and calculating the perfect cleaning plan..."}
             </div>
-            <div className="processing-step">{processingStep}</div>
+            <div style={{ textAlign: 'center', margin: '20px 0' }}>
+              <div className="spinner-border text-primary" role="status" style={{ width: '4rem', height: '4rem' }}>
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <p style={{ marginTop: '15px', fontSize: '1.1rem', color: '#007bff' }}>
+                {loadingMessages[Math.floor(Math.random() * loadingMessages.length)]}
+              </p>
+            </div>
           </section>
         )}
 
