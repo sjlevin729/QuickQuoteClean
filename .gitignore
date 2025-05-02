@@ -29,3 +29,8 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Google API credentials
+google-credentials.json
+*-credentials.json
+server/google-credentials.json
