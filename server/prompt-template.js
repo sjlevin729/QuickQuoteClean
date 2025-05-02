@@ -34,7 +34,7 @@ const getInitialAnalysisTemplate = () => {
    - Washing Dishes/Loading Dishwasher
    - Changing Bed Sheets
 
-5. Return your response in this exact JSON format (and nothing else):
+5. Return your response in this exact JSON format:
 {
   "summary": "Brief summary of the space",
   "rooms": {
@@ -56,7 +56,7 @@ const getInitialAnalysisTemplate = () => {
   }
 }
 
-IMPORTANT: The response must be valid JSON with no additional text before or after. Do not include markdown formatting, explanations, or any other content.`;
+IMPORTANT: The response must be valid JSON with no additional text before or after. Do not include markdown formatting, explanations, or any other content. Make sure all property names are exactly as shown above, all in camelCase. All room counts must be numbers and all activity values must be true or false booleans.`;
 };
 
 // Second step prompt - Generate quote based on adjusted activity counts
