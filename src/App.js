@@ -1243,6 +1243,18 @@ function App() {
               </p>
               
               <div className="adjustment-container">
+                {/* AI Summary Box */}
+                {initialAnalysis && initialAnalysis.summary && (
+                  <div className="summary-box">
+                    <h4 className="summary-title">AI Analysis Summary</h4>
+                    <p className="summary-text">{initialAnalysis.summary}</p>
+                    <p className="summary-instruction">
+                      Based on this analysis, we've pre-configured the details below. 
+                      Please review and adjust if needed.
+                    </p>
+                  </div>
+                )}
+                
                 <div className="row">
                   <div className="col-md-6">
                     <div className="adjustment-card">

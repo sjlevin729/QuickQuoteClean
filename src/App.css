@@ -320,19 +320,6 @@ body {
   justify-content: center;
 }
 
-/* Media Queries for Camera Modal */
-@media (max-width: 768px) {
-  .camera-modal-content {
-    width: 95%;
-    height: 95vh;
-    max-height: none;
-  }
-  
-  .camera-body {
-    min-height: 200px;
-  }
-}
-
 /* Processing Section */
 .processing-section {
   position: fixed;
@@ -357,6 +344,10 @@ body {
   padding: 2rem;
   text-align: center;
   animation: fadeIn 0.5s ease-in-out;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 @keyframes fadeIn {
@@ -1149,4 +1140,38 @@ body {
   min-width: 200px;
   font-size: 1.1rem;
   padding: 0.75rem 1.5rem;
+}
+
+/* Summary Box in Adjustment UI */
+.summary-box {
+  background-color: #f8f9ff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border-left: 4px solid #007bff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.summary-title {
+  font-size: 1.2rem;
+  color: #007bff;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.summary-text {
+  font-size: 1.05rem;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.summary-instruction {
+  font-size: 0.95rem;
+  color: #666;
+  background-color: #f0f7ff;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 0;
 }
