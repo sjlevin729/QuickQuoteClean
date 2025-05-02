@@ -43,8 +43,8 @@ function App() {
   const [cleaningServices, setCleaningServices] = useState({
     generalCleaning: true,
     deepCleaning: false,
-    kitchenBathroom: true,
-    floorCleaning: true,
+    kitchenBathroom: false,
+    floorCleaning: false,
     windowsCleaning: false,
     organizingDecluttering: false
   });
@@ -495,6 +495,7 @@ function App() {
               className={`upload-container ${isDragging ? 'dragging' : ''}`}
               onDragOver={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 setIsDragging(true);
               }}
               onDragLeave={() => setIsDragging(false)}
@@ -562,6 +563,10 @@ function App() {
                     <label className="context-label" htmlFor="cleaning-services">
                       Select Cleaning Services
                     </label>
+                    <p className="context-helper mb-3">
+                      Select any additional cleaning services you'd like included in your quote, even if they're not shown in the video. 
+                      This helps us provide a more accurate and comprehensive cleaning quote for your specific needs.
+                    </p>
                     <div className="checkbox-group">
                       <div className="checkbox-item">
                         <input
