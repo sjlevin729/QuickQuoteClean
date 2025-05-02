@@ -118,6 +118,7 @@ async function addQuoteToSheet(quoteData) {
         quoteData.userInfo?.email || '',
         quoteData.userInfo?.phone || '',
         quoteData.userInfo?.address || '',
+        quoteData.userInfo?.notes || '',
         quoteData.cleaningContext || '',
         activitySummary,
         quoteData.analysis || '',
@@ -129,7 +130,7 @@ async function addQuoteToSheet(quoteData) {
     // Append data to the sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Sheet1!A:L',  // Updated to include all columns including address and video URL
+      range: 'Sheet1!A:M',  // Updated to include all columns including notes
       valueInputOption: 'RAW',
       resource: {
         values
