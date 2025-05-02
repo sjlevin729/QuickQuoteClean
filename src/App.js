@@ -57,20 +57,12 @@ function App() {
   const [showAmendQuoteForm, setShowAmendQuoteForm] = useState(false);
   const [amendedCleaningContext, setAmendedCleaningContext] = useState('');
   const [isGeneratingAmendedQuote, setIsGeneratingAmendedQuote] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [showCameraModal, setShowCameraModal] = useState(false);
-  const [cameraStream, setCameraStream] = useState(null);
   const [recordedChunks, setRecordedChunks] = useState([]);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
-  const videoRef = useRef(null);
-  const recordingTimeRef = useRef(null);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [recordingInterval, setRecordingInterval] = useState(null);
   const uploadRef = useRef(null);
+  const nativeCameraRef = useRef(null);
   const extractedImagesRef = useRef([]);
   const [processingStep, setProcessingStep] = useState('');
   const [fps, setFps] = useState(1);
-  const [videoStorageUrl, setVideoStorageUrl] = useState('');
 
   // Get a random loading message
   const getRandomLoadingMessage = () => {
@@ -637,133 +629,6 @@ function App() {
     }
   };
 
-  // Start camera for recording
-  const startCamera = async () => {
-    try {
-      // Reset recording state
-      setRecordedChunks([]);
-      setRecordingTime(0);
-
-      // Request camera access
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment', // Prefer back camera if available
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: true
-      });
-
-      // Set stream to video element
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-
-      setCameraStream(stream);
-      setShowCameraModal(true);
-      setMessage('');
-
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      setMessage(`Could not access camera: ${error.message}. Please check your camera permissions.`);
-      setMessageType('danger');
-    }
-  };
-
-  // Stop camera
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-    }
-
-    if (recordingInterval) {
-      clearInterval(recordingInterval);
-      setRecordingInterval(null);
-    }
-
-    setIsRecording(false);
-    setShowCameraModal(false);
-  };
-
-  // Start recording
-  const startRecording = () => {
-    if (!cameraStream) return;
-
-    try {
-      // Create media recorder
-      const recorder = new MediaRecorder(cameraStream, { mimeType: 'video/webm' });
-
-      // Handle data available event
-      recorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          setRecordedChunks(prev => [...prev, event.data]);
-        }
-      };
-
-      // Handle recording stop
-      recorder.onstop = () => {
-        // Create blob from recorded chunks
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-
-        // Create file from blob
-        const file = new File([blob], `recording_${new Date().getTime()}.webm`, { type: 'video/webm' });
-
-        // Handle the recorded video like an uploaded file
-        handleVideoSelect(file);
-
-        // Clear recording state
-        setRecordedChunks([]);
-        setRecordingTime(0);
-
-        // Close camera modal
-        setShowCameraModal(false);
-      };
-
-      // Start recording
-      recorder.start(1000); // Collect data in 1-second chunks
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-
-      // Start recording timer
-      const interval = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-
-      setRecordingInterval(interval);
-
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      setMessage(`Could not start recording: ${error.message}`);
-      setMessageType('danger');
-    }
-  };
-
-  // Stop recording
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-    }
-
-    if (recordingInterval) {
-      clearInterval(recordingInterval);
-      setRecordingInterval(null);
-    }
-
-    setIsRecording(false);
-  };
-
-  // Format recording time (mm:ss)
-  const formatRecordingTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   // Handle form submission for the new two-step process
   const handleSubmit = async () => {
     if (!video && recordedChunks.length === 0) {
@@ -1083,7 +948,7 @@ function App() {
 
                 <button
                   className="btn btn-secondary record-btn"
-                  onClick={startCamera}
+                  onClick={() => nativeCameraRef.current.click()}
                 >
                   <i className="bi bi-camera-video me-2"></i>
                   Record Video
@@ -1101,65 +966,22 @@ function App() {
                 accept="video/*"
                 style={{ display: 'none' }}
               />
+              
+              {/* Native camera input for mobile devices */}
+              <input
+                type="file"
+                ref={nativeCameraRef}
+                onChange={(e) => {
+                  if (e.target.files.length > 0) {
+                    handleVideoSelect(e.target.files[0]);
+                  }
+                }}
+                accept="video/*"
+                capture="environment"
+                style={{ display: 'none' }}
+              />
             </div>
           </section>
-        )}
-
-        {/* Camera Modal */}
-        {showCameraModal && (
-          <div className="modal-backdrop camera-modal">
-            <div className="modal-content camera-modal-content">
-              <div className="camera-header">
-                <h3 className="camera-title">Record Video</h3>
-                <button
-                  className="close-btn"
-                  onClick={stopCamera}
-                  aria-label="Close"
-                >
-                  <i className="bi bi-x-lg"></i>
-                </button>
-              </div>
-
-              <div className="camera-body">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="camera-preview"
-                ></video>
-
-                <div className="recording-info">
-                  {isRecording && (
-                    <div className="recording-indicator">
-                      <span className="recording-dot"></span>
-                      Recording: {formatRecordingTime(recordingTime)}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="camera-footer">
-                {!isRecording ? (
-                  <button
-                    className="btn btn-danger record-btn"
-                    onClick={startRecording}
-                  >
-                    <i className="bi bi-record-circle me-2"></i>
-                    Start Recording
-                  </button>
-                ) : (
-                  <button
-                    className="btn btn-secondary stop-btn"
-                    onClick={stopRecording}
-                  >
-                    <i className="bi bi-stop-circle me-2"></i>
-                    Stop Recording
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
         )}
 
         {/* Video Preview Section */}
