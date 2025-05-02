@@ -152,66 +152,108 @@ app.post('/api/analyze', imageUpload.array('images'), async (req, res) => {
     
     console.log('Sending initial analysis request to OpenAI API...');
     
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: promptText },
-            ...imageContents
-          ]
-        }
-      ],
-      max_tokens: 4096,
-    });
-    
-    const analysis = response.choices[0].message.content.trim();
-    console.log('Initial analysis received from OpenAI API');
-    console.log('Raw response content:', analysis.substring(0, 200) + '...');
-    
-    // Parse the JSON response
-    let parsedAnalysis;
     try {
-      // Try to extract JSON from the response if it's wrapped in text
-      let jsonStr = analysis;
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional cleaning service estimator. Your task is to analyze images of spaces and provide structured data about rooms and cleaning activities needed. Always respond with valid JSON in the exact format requested."
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: promptText },
+              ...imageContents
+            ]
+          }
+        ],
+        max_tokens: 4096,
+        response_format: { type: "json_object" }  // Force JSON response format
+      });
       
-      // Look for JSON object pattern
-      const jsonMatch = analysis.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0];
-        console.log('Extracted JSON from response');
-      }
+      const analysis = response.choices[0].message.content.trim();
+      console.log('Initial analysis received from OpenAI API');
+      console.log('Raw response content:', analysis.substring(0, 200) + '...');
       
-      // Try to parse the JSON
+      // Parse the JSON response
+      let parsedAnalysis;
       try {
-        parsedAnalysis = JSON.parse(jsonStr);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        console.log('Attempting to fix malformed JSON...');
+        // Try to extract JSON from the response if it's wrapped in text
+        let jsonStr = analysis;
         
-        // Try to fix common JSON issues
-        let fixedJson = jsonStr
-          .replace(/(\w+):/g, '"$1":') // Add quotes to keys
-          .replace(/'/g, '"') // Replace single quotes with double quotes
-          .replace(/,\s*}/g, '}') // Remove trailing commas
-          .replace(/,\s*]/g, ']'); // Remove trailing commas in arrays
-          
-        console.log('Fixed JSON attempt:', fixedJson.substring(0, 200) + '...');
-        parsedAnalysis = JSON.parse(fixedJson);
-      }
-      
-      // Validate the structure of the parsed JSON
-      if (!parsedAnalysis.summary || !parsedAnalysis.rooms || !parsedAnalysis.activities) {
-        // If we're missing fields, create a default structure
-        console.log('Missing required fields in response, creating default structure');
-        
-        if (!parsedAnalysis.summary) {
-          parsedAnalysis.summary = "Based on the images, I can see a space that needs cleaning.";
+        // Look for JSON object pattern
+        const jsonMatch = analysis.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          jsonStr = jsonMatch[0];
+          console.log('Extracted JSON from response');
         }
         
-        if (!parsedAnalysis.rooms) {
-          parsedAnalysis.rooms = {
+        // Try to parse the JSON
+        try {
+          parsedAnalysis = JSON.parse(jsonStr);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          console.log('Attempting to fix malformed JSON...');
+          
+          // Try to fix common JSON issues
+          let fixedJson = jsonStr
+            .replace(/(\w+):/g, '"$1":') // Add quotes to keys
+            .replace(/'/g, '"') // Replace single quotes with double quotes
+            .replace(/,\s*}/g, '}') // Remove trailing commas
+            .replace(/,\s*]/g, ']'); // Remove trailing commas in arrays
+          
+          console.log('Fixed JSON attempt:', fixedJson.substring(0, 200) + '...');
+          parsedAnalysis = JSON.parse(fixedJson);
+        }
+        
+        // Validate the structure of the parsed JSON
+        if (!parsedAnalysis.summary || !parsedAnalysis.rooms || !parsedAnalysis.activities) {
+          // If we're missing fields, create a default structure
+          console.log('Missing required fields in response, creating default structure');
+          
+          if (!parsedAnalysis.summary) {
+            parsedAnalysis.summary = "Based on the images, I can see a space that needs cleaning.";
+          }
+          
+          if (!parsedAnalysis.rooms) {
+            parsedAnalysis.rooms = {
+              bedrooms: 1,
+              bathrooms: 1,
+              livingDiningRooms: 1,
+              kitchens: 1,
+              studyUtilityRooms: 0,
+              hallways: 1,
+              staircases: 0
+            };
+          }
+          
+          if (!parsedAnalysis.activities) {
+            parsedAnalysis.activities = {
+              ironing: false,
+              foldingLaundry: false,
+              internalWindows: true,
+              insideFridge: false,
+              washingDishes: true,
+              changingBedSheets: false
+            };
+          }
+        }
+        
+        // Send the parsed analysis to the client
+        res.json({
+          success: true,
+          initialAnalysis: parsedAnalysis,
+          quoteId: `QQ${Math.floor(Math.random() * 10000)}`
+        });
+      } catch (error) {
+        console.error('Error parsing OpenAI response:', error);
+        console.error('Raw response:', analysis);
+        
+        // Create a fallback response
+        const fallbackAnalysis = {
+          summary: "Based on the images, I can see a space that needs cleaning.",
+          rooms: {
             bedrooms: 1,
             bathrooms: 1,
             livingDiningRooms: 1,
@@ -219,59 +261,31 @@ app.post('/api/analyze', imageUpload.array('images'), async (req, res) => {
             studyUtilityRooms: 0,
             hallways: 1,
             staircases: 0
-          };
-        }
-        
-        if (!parsedAnalysis.activities) {
-          parsedAnalysis.activities = {
+          },
+          activities: {
             ironing: false,
             foldingLaundry: false,
             internalWindows: true,
             insideFridge: false,
             washingDishes: true,
             changingBedSheets: false
-          };
-        }
+          }
+        };
+        
+        // Send fallback response
+        res.json({
+          success: true,
+          initialAnalysis: fallbackAnalysis,
+          quoteId: `QQ${Math.floor(Math.random() * 10000)}`,
+          note: "Using fallback data due to parsing error"
+        });
       }
-      
-      // Send the parsed analysis to the client
-      res.json({
-        success: true,
-        initialAnalysis: parsedAnalysis,
-        quoteId: `QQ${Math.floor(Math.random() * 10000)}`
-      });
     } catch (error) {
-      console.error('Error parsing OpenAI response:', error);
-      console.error('Raw response:', analysis);
-      
-      // Create a fallback response
-      const fallbackAnalysis = {
-        summary: "Based on the images, I can see a space that needs cleaning.",
-        rooms: {
-          bedrooms: 1,
-          bathrooms: 1,
-          livingDiningRooms: 1,
-          kitchens: 1,
-          studyUtilityRooms: 0,
-          hallways: 1,
-          staircases: 0
-        },
-        activities: {
-          ironing: false,
-          foldingLaundry: false,
-          internalWindows: true,
-          insideFridge: false,
-          washingDishes: true,
-          changingBedSheets: false
-        }
-      };
-      
-      // Send fallback response
-      res.json({
-        success: true,
-        initialAnalysis: fallbackAnalysis,
-        quoteId: `QQ${Math.floor(Math.random() * 10000)}`,
-        note: "Using fallback data due to parsing error"
+      console.error('Error during image analysis:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to analyze images',
+        details: error.message
       });
     }
   } catch (error) {
@@ -302,25 +316,43 @@ app.post('/api/generate-quote', express.json(), async (req, res) => {
     // Construct the final quote prompt
     const promptText = formatFinalQuotePrompt(cleaningContext, activityCounts);
     
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: promptText
-        }
-      ],
-      max_tokens: 4096,
-    });
-    
-    const quote = response.choices[0].message.content.trim();
-    console.log('Final quote received from OpenAI API');
-    
-    res.json({
-      success: true,
-      quote,
-      quoteId: quoteId || `QQ${Math.floor(Math.random() * 10000)}`
-    });
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional cleaning service estimator. Your task is to generate detailed cleaning quotes based on room counts and activities."
+          },
+          {
+            role: "user",
+            content: promptText
+          }
+        ],
+        max_tokens: 4096
+      });
+      
+      const quote = response.choices[0].message.content.trim();
+      console.log('Final quote received from OpenAI API');
+      
+      res.json({
+        success: true,
+        quote,
+        quoteId: quoteId || `QQ${Math.floor(Math.random() * 10000)}`
+      });
+    } catch (apiError) {
+      console.error('Error calling OpenAI API:', apiError);
+      
+      // Generate a fallback quote if the API call fails
+      const fallbackQuote = generateFallbackQuote(activityCounts);
+      
+      res.json({
+        success: true,
+        quote: fallbackQuote,
+        quoteId: quoteId || `QQ${Math.floor(Math.random() * 10000)}`,
+        note: "Using fallback quote due to API error"
+      });
+    }
   } catch (error) {
     console.error('Error generating final quote:', error);
     res.status(500).json({
@@ -330,6 +362,53 @@ app.post('/api/generate-quote', express.json(), async (req, res) => {
     });
   }
 });
+
+// Generate a fallback quote if the OpenAI API fails
+function generateFallbackQuote(activityCounts) {
+  // Calculate room counts
+  const roomCount = Object.values(activityCounts.rooms).reduce((sum, count) => sum + count, 0);
+  
+  // Count activities
+  const activityCount = Object.values(activityCounts.activities).filter(Boolean).length;
+  
+  // Calculate time based on room types (in minutes)
+  let totalMinutes = 0;
+  
+  // Add time for each room type
+  totalMinutes += activityCounts.rooms.bedrooms * 30;
+  totalMinutes += activityCounts.rooms.bathrooms * 30;
+  totalMinutes += activityCounts.rooms.livingDiningRooms * 30;
+  totalMinutes += activityCounts.rooms.kitchens * 30;
+  totalMinutes += activityCounts.rooms.studyUtilityRooms * 30;
+  totalMinutes += activityCounts.rooms.hallways * 15;
+  totalMinutes += activityCounts.rooms.staircases * 15;
+  
+  // Add time for activities
+  if (activityCounts.activities.ironing) totalMinutes += 90;
+  if (activityCounts.activities.foldingLaundry) totalMinutes += 30;
+  if (activityCounts.activities.internalWindows) totalMinutes += 30;
+  if (activityCounts.activities.insideFridge) totalMinutes += 30;
+  if (activityCounts.activities.washingDishes) totalMinutes += 15;
+  if (activityCounts.activities.changingBedSheets) totalMinutes += 15 * activityCounts.rooms.bedrooms;
+  
+  // Calculate hours and price
+  const hours = Math.ceil(totalMinutes / 60);
+  const price = hours * 15;
+  
+  return `
+Cleaning Quote
+
+Based on your requirements, we will clean ${roomCount} rooms including ${activityCounts.rooms.bedrooms} bedroom(s), ${activityCounts.rooms.bathrooms} bathroom(s), and ${activityCounts.rooms.kitchens} kitchen(s).
+
+Cleaning Activities:
+${activityCounts.activities.ironing ? '- Ironing: 1.5 hours\n' : ''}${activityCounts.activities.foldingLaundry ? '- Folding Laundry: 30 minutes\n' : ''}${activityCounts.activities.internalWindows ? '- Internal Windows: 30 minutes\n' : ''}${activityCounts.activities.insideFridge ? '- Inside Fridge: 30 minutes\n' : ''}${activityCounts.activities.washingDishes ? '- Washing Dishes: 15 minutes\n' : ''}${activityCounts.activities.changingBedSheets ? `- Changing Bed Sheets: ${15 * activityCounts.rooms.bedrooms} minutes\n` : ''}
+
+Total estimated time: ${hours} hour(s)
+Total price: £${price}
+
+Thank you for choosing our cleaning service!
+`;
+}
 
 // API endpoint for saving quotes
 app.post('/api/save-quote', express.json(), async (req, res) => {
