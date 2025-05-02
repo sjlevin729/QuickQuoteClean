@@ -6,6 +6,7 @@ const fs = require('fs');
 const { OpenAI } = require('openai');
 const dotenv = require('dotenv');
 const db = require('./database/db');
+const { addQuoteToSheet } = require('./googleSheets');
 
 // Load environment variables
 dotenv.config();
@@ -281,7 +282,7 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
 // API endpoint for saving quotes
 app.post('/api/save-quote', express.json(), async (req, res) => {
   try {
-    const { quoteId, quoteText, userInfo } = req.body;
+    const { quoteId, quoteText, userInfo, cleaningServices, cleaningContext } = req.body;
     
     // Validate all required fields are present
     if (!quoteId || !quoteText) {
@@ -297,6 +298,38 @@ app.post('/api/save-quote', express.json(), async (req, res) => {
     
     // Save user info
     db.saveUserInfo(quoteId, userInfo);
+    
+    // Try to save to Google Sheets if configured
+    try {
+      if (process.env.GOOGLE_SHEET_ID) {
+        console.log('Saving quote to Google Sheets...');
+        
+        // Extract estimated price from the quote text if possible
+        let estimatedPrice = 'Not specified';
+        const priceMatch = quoteText.match(/£(\d+(\.\d+)?)/);
+        if (priceMatch) {
+          estimatedPrice = priceMatch[0];
+        }
+        
+        // Prepare data for Google Sheets
+        const sheetData = {
+          quoteId,
+          timestamp: new Date().toISOString(),
+          userInfo,
+          cleaningServices: cleaningServices || {},
+          cleaningContext: cleaningContext || '',
+          analysis: quoteText,
+          estimatedPrice
+        };
+        
+        // Add to Google Sheets
+        await addQuoteToSheet(sheetData);
+        console.log('Quote successfully added to Google Sheets');
+      }
+    } catch (sheetError) {
+      // Log the error but don't fail the request
+      console.error('Error saving to Google Sheets (continuing anyway):', sheetError);
+    }
     
     res.json({ 
       success: true, 

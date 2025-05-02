@@ -499,7 +499,7 @@ function App() {
     // Validate required fields
     if (!userInfo.name || !userInfo.email || !userInfo.phone) {
       setMessage('Please fill in your name, email, and phone number.');
-      setMessageType('warning');
+      setMessageType('error');
       return;
     }
 
@@ -516,7 +516,9 @@ function App() {
         body: JSON.stringify({
           quoteId,
           quoteText: analysis,
-          userInfo
+          userInfo,
+          cleaningServices,
+          cleaningContext
         }),
       });
 
