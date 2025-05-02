@@ -113,6 +113,8 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   overflow-x: hidden; /* Prevent horizontal scrolling */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .section-title {
@@ -133,6 +135,9 @@ body {
 /* Upload Section */
 .upload-section {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .upload-container {
@@ -147,8 +152,10 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 90%;
+  max-width: 600px;
   box-sizing: border-box; /* Ensure padding is included in width */
+  margin: 0 auto;
 }
 
 .upload-container:hover {
@@ -343,7 +350,7 @@ body {
 
 .processing-container {
   max-width: 600px;
-  width: 100%;
+  width: 90%;
   background-color: #fff;
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
@@ -402,15 +409,16 @@ body {
 
 /* Results Section */
 .results-section {
-  margin-bottom: 3rem;
+  margin: 0 auto;
+  max-width: 800px;
 }
 
 .analysis-container {
   background-color: white;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
-  margin-top: 1.5rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .analysis-text {
@@ -497,11 +505,15 @@ body {
 
 /* User Form */
 .user-form-section {
+  margin: 0 auto;
+  max-width: 600px;
+}
+
+.user-form-section form {
   background-color: white;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 2rem;
-  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .form-group {
@@ -649,90 +661,12 @@ body {
   
   .upload-container {
     padding: 2rem 1rem;
+    width: 90%;
   }
   
   .upload-options {
     flex-direction: column;
-  }
-  
-  .upload-btn, .record-btn {
-    min-width: 100%;
-    margin: 0.5rem 0;
-  }
-  
-  .upload-divider {
-    display: block;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero-content {
-    padding: 0 1rem;
-  }
-  
-  .hero-title {
-    font-size: 1.8rem;
-  }
-  
-  .upload-container {
-    padding: 1.5rem 1rem;
-  }
-  
-  .upload-icon {
-    font-size: 2.5rem;
-  }
-  
-  .upload-text {
-    font-size: 1.2rem;
-  }
-  
-  .upload-subtext {
-    font-size: 0.9rem;
-  }
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  /* Header */
-  .header-content {
-    flex-direction: column;
-    padding: 1rem;
-  }
-  
-  .brand {
-    margin-bottom: 0.5rem;
-  }
-  
-  .contact-info {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .contact-item {
-    margin: 0.25rem 0;
-    margin-left: 0;
-  }
-  
-  /* Hero Section */
-  .hero-section {
-    padding: 2rem 0;
-  }
-  
-  .hero-title {
-    font-size: 2rem;
-  }
-  
-  .hero-subtitle {
-    font-size: 1rem;
-  }
-  
-  /* Upload Section */
-  .upload-container {
-    padding: 2rem 1rem;
-  }
-  
-  .upload-options {
-    flex-direction: column;
+    width: 100%;
   }
   
   .upload-btn, .record-btn {
@@ -747,10 +681,12 @@ body {
   /* Video Preview */
   .video-preview-content {
     flex-direction: column;
+    align-items: center;
   }
   
   .video-preview-player, .video-preview-actions {
-    width: 100%;
+    width: 90%;
+    max-width: 100%;
   }
   
   .video-preview-player {
@@ -760,60 +696,30 @@ body {
   /* Adjustment UI */
   .adjustment-container {
     padding: 1.5rem 1rem;
+    width: 90%;
+    margin: 0 auto;
   }
   
   .adjustment-card {
     padding: 1rem;
   }
   
-  .adjustment-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .adjustment-item-label {
-    margin-bottom: 0.5rem;
-  }
-  
-  .adjustment-controls, .adjustment-toggle {
-    align-self: flex-end;
-  }
-  
   /* Results Section */
+  .results-section {
+    width: 90%;
+  }
+  
   .analysis-container {
     padding: 1rem;
   }
   
-  .analysis-text {
-    font-size: 0.9rem;
-  }
-  
-  .action-buttons {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .action-buttons .btn {
-    width: 100%;
-  }
-  
   /* User Form */
+  .user-form-section {
+    width: 90%;
+  }
+  
   .user-form-section form {
     padding: 1rem;
-  }
-  
-  /* Thank You Modal */
-  .modal-content {
-    width: 90%;
-    padding: 1.5rem;
-  }
-  
-  .thank-you-title {
-    font-size: 1.5rem;
-  }
-  
-  .thank-you-message {
-    font-size: 1rem;
   }
 }
 
@@ -1143,59 +1049,62 @@ body {
 
 /* Video Preview Section */
 .video-preview-container {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
   margin-bottom: 2rem;
 }
 
 .video-preview-content {
   display: flex;
-  flex-wrap: wrap;
   gap: 2rem;
+  align-items: flex-start;
 }
 
 .video-preview-player {
-  flex: 2;
-  min-width: 300px;
-}
-
-.video-preview-actions {
   flex: 1;
-  min-width: 250px;
-  display: flex;
-  flex-direction: column;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .video-player {
   width: 100%;
   border-radius: 8px;
-  overflow: hidden;
-  background-color: var(--gray-900);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.video-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  margin-bottom: 1rem;
+.video-preview-actions {
+  flex: 1;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .video-actions-card {
-  background-color: var(--gray-100);
+  background-color: white;
   border-radius: 8px;
   padding: 1.5rem;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.action-buttons {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+/* Adjustment UI Section */
+.adjustment-section {
+  padding: 3rem 0;
+  background-color: #f0f7ff;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.adjustment-description {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto 2rem;
+  color: #555;
+  font-size: 1.1rem;
+}
+
+.adjustment-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 2rem;
 }
 
 /* Utility Classes */
@@ -1245,7 +1154,7 @@ body {
 }
 
 .adjustment-container {
-  max-width: 1000px;
+  max-width: 800px;
   margin: 0 auto;
   background-color: #fff;
   border-radius: 10px;
@@ -1412,4 +1321,182 @@ body {
   padding: 0.75rem;
   border-radius: 4px;
   margin-bottom: 0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  /* Header */
+  .header-content {
+    flex-direction: column;
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  .brand {
+    margin-bottom: 0.5rem;
+  }
+  
+  .contact-info {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .contact-item {
+    margin: 0.25rem 0;
+    margin-left: 0;
+  }
+  
+  /* Hero Section */
+  .hero-section {
+    padding: 2rem 0;
+  }
+  
+  .hero-title {
+    font-size: 2rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1rem;
+  }
+  
+  /* Upload Section */
+  .upload-container {
+    padding: 2rem 1rem;
+    width: 90%;
+  }
+  
+  .upload-options {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .upload-btn, .record-btn {
+    min-width: 100%;
+    margin: 0.5rem 0;
+  }
+  
+  .upload-divider {
+    display: block;
+  }
+  
+  /* Video Preview */
+  .video-preview-content {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .video-preview-player, .video-preview-actions {
+    width: 90%;
+    max-width: 100%;
+  }
+  
+  .video-preview-player {
+    margin-bottom: 1rem;
+  }
+  
+  /* Adjustment UI */
+  .adjustment-container {
+    padding: 1.5rem 1rem;
+    width: 90%;
+    margin: 0 auto;
+  }
+  
+  .adjustment-card {
+    padding: 1rem;
+  }
+  
+  /* Results Section */
+  .results-section {
+    width: 90%;
+  }
+  
+  .analysis-container {
+    padding: 1rem;
+  }
+  
+  /* User Form */
+  .user-form-section {
+    width: 90%;
+  }
+  
+  .user-form-section form {
+    padding: 1rem;
+  }
+  
+  /* Thank You Modal */
+  .modal-content {
+    width: 90%;
+    padding: 1.5rem;
+  }
+  
+  .thank-you-title {
+    font-size: 1.5rem;
+  }
+  
+  .thank-you-message {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-content {
+    padding: 0 1rem;
+  }
+  
+  .hero-title {
+    font-size: 1.8rem;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+  
+  .upload-container {
+    padding: 1.5rem 1rem;
+  }
+  
+  .upload-icon {
+    font-size: 2.5rem;
+  }
+  
+  .upload-text {
+    font-size: 1.2rem;
+  }
+  
+  .upload-subtext {
+    font-size: 0.9rem;
+  }
+  
+  /* Processing Section */
+  .processing-container {
+    padding: 1.5rem;
+  }
+  
+  .processing-title {
+    font-size: 1.4rem;
+  }
+  
+  .loading-message {
+    font-size: 0.9rem;
+  }
+  
+  /* Summary Box */
+  .summary-box {
+    padding: 1rem;
+  }
+  
+  .summary-title {
+    font-size: 1.1rem;
+  }
+  
+  .summary-text {
+    font-size: 0.95rem;
+  }
+}
+
+/* Fix for iOS Safari 100vh issue */
+@supports (-webkit-touch-callout: none) {
+  .processing-section, .camera-modal {
+    height: -webkit-fill-available;
+  }
 }
