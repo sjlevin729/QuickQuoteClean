@@ -426,12 +426,28 @@ app.post('/api/save-quote', express.json(), async (req, res) => {
 
     console.log(`Saving quote ${quoteId} with estimated price £${estimatedPrice}`);
 
+    // Save quote to database
+    try {
+      // Save the quote to the database
+      db.saveQuote(quoteId, quoteText);
+      console.log(`Quote ${quoteId} saved to database`);
+      
+      // Save user information if provided
+      if (userInfo) {
+        db.saveUserInfo(quoteId, userInfo);
+        console.log(`User information for quote ${quoteId} saved to database`);
+      }
+    } catch (dbError) {
+      console.error('Error saving to database:', dbError);
+      // Continue even if database save fails
+    }
+
     // Get video URL from database if available
     let videoUrl = '';
     try {
       const quoteData = db.getQuoteById(quoteId);
-      if (quoteData && quoteData.videoUrl) {
-        videoUrl = quoteData.videoUrl;
+      if (quoteData && quoteData.video_url) {
+        videoUrl = quoteData.video_url;
         console.log(`Found video URL for quote ${quoteId}: ${videoUrl}`);
       }
     } catch (dbError) {
