@@ -6,8 +6,6 @@
  * 
  * Available variables that will be replaced:
  * - {{CLEANING_CONTEXT}} - The additional context provided by the customer
- * - {{INCLUDED_SERVICES}} - List of services the customer has selected
- * - {{EXCLUDED_SERVICES}} - List of services the customer has not selected
  */
 
 const getPromptTemplate = () => {
@@ -17,14 +15,26 @@ const getPromptTemplate = () => {
 
 2. The customer provided this additional context: {{CLEANING_CONTEXT}}
 
-3. The customer has specifically requested the following services:
-{{INCLUDED_SERVICES}}
+3. Based on the images and context, include all appropriate cleaning services that would be needed for this space.
 
-{{EXCLUDED_SERVICES_SECTION}}
+4. List each cleaning activity that would be undertaken with a specific time allocation for each task.
+Let's assume the following time for each room type and activity:
+ - Bedroom - 30mins
+ - Bathroom - 30mins
+ - Kitchen - 30mins
+ - Living Room - 30mins
+ - Hall - 15mins
+ - Stairs - 15mins
+ - Laundry - 30mins
+ - Fridge - 30mins
+ - Dishwasher/Washing dishes - 15mins
+ - Bed Sheets - 15mins
+ - Folding Laundry - 30mins
+ - Ironing - 1.5 hours
+ - Windows - 30mins
+ - Organizing/Decluttering - 15mins
 
-5. List each cleaning activity that would be undertaken with a specific time allocation for each task. ONLY include the services that the customer has requested.
-
-6. End with a total time calculation and the final price quote using a fixed rate of £15 per hour.
+5. End with a total time calculation and the final price quote using a fixed rate of £15 per hour.
 
 IMPORTANT FORMATTING RULES:
 - Do NOT include any introduction or sign-off
@@ -37,63 +47,20 @@ IMPORTANT FORMATTING RULES:
 };
 
 /**
- * Service descriptions mapping
- * This maps the service IDs to human-readable descriptions
- */
-const serviceDescriptions = {
-  generalCleaning: "General Cleaning (dusting surfaces, removing cobwebs, cleaning light fixtures)",
-  deepCleaning: "Deep Cleaning (detailed cleaning of all surfaces, baseboards, crown molding)",
-  kitchenBathroom: "Kitchen & Bathroom Cleaning (countertops, sinks, appliances, toilets, showers)",
-  floorCleaning: "Floor Cleaning (vacuuming, mopping, spot cleaning)",
-  windowsCleaning: "Windows Cleaning (interior windows, glass surfaces, mirrors)",
-  organizingDecluttering: "Organizing & Decluttering (arranging items, removing clutter)"
-};
-
-/**
- * Formats the prompt with the provided context and services
+ * Formats the prompt with the provided context
  * 
  * @param {string} cleaningContext - The cleaning context provided by the customer
- * @param {Object} selectedServices - Object with service IDs as keys and boolean values
  * @returns {string} The formatted prompt
  */
-const formatPrompt = (cleaningContext, selectedServices) => {
+const formatPrompt = (cleaningContext) => {
   const template = getPromptTemplate();
-  
-  // Format included services
-  const includedServices = Object.entries(selectedServices)
-    .filter(([_, selected]) => selected)
-    .map(([service]) => {
-      return `   - ${serviceDescriptions[service] || service
-        .replace(/([A-Z])/g, ' $1')
-        .replace(/^./, str => str.toUpperCase())}`;
-    });
-  
-  const includedServicesText = includedServices.length > 0 
-    ? includedServices.join('\n') 
-    : "   - General cleaning services";
-  
-  // Format excluded services
-  const excludedServices = Object.entries(selectedServices)
-    .filter(([_, selected]) => !selected)
-    .map(([service]) => {
-      return `   - ${serviceDescriptions[service] || service
-        .replace(/([A-Z])/g, ' $1')
-        .replace(/^./, str => str.toUpperCase())}`;
-    });
-  
-  const excludedServicesSection = excludedServices.length > 0
-    ? `4. The customer has specifically excluded these services (DO NOT include these in the quote):\n${excludedServices.join('\n')}\n`
-    : '';
   
   // Replace placeholders in the template
   return template
-    .replace('{{CLEANING_CONTEXT}}', cleaningContext || "No additional context provided")
-    .replace('{{INCLUDED_SERVICES}}', includedServicesText)
-    .replace('{{EXCLUDED_SERVICES_SECTION}}', excludedServicesSection);
+    .replace('{{CLEANING_CONTEXT}}', cleaningContext || "No additional context provided");
 };
 
 module.exports = {
   getPromptTemplate,
-  formatPrompt,
-  serviceDescriptions
+  formatPrompt
 };

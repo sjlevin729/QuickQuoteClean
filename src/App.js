@@ -41,17 +41,8 @@ function App() {
   const [showThankYouModal, setShowThankYouModal] = useState(false);
   const [cleaningContext, setCleaningContext] = useState('');
   const [duration, setDuration] = useState(0);
-  const [cleaningServices, setCleaningServices] = useState({
-    generalCleaning: true,
-    deepCleaning: false,
-    kitchenBathroom: false,
-    floorCleaning: false,
-    windowsCleaning: false,
-    organizingDecluttering: false
-  });
   const [showAmendQuoteForm, setShowAmendQuoteForm] = useState(false);
   const [amendedCleaningContext, setAmendedCleaningContext] = useState('');
-  const [amendedCleaningServices, setAmendedCleaningServices] = useState({});
   const [isGeneratingAmendedQuote, setIsGeneratingAmendedQuote] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
@@ -103,28 +94,9 @@ function App() {
   // Initialize amended services when showing the amend form
   useEffect(() => {
     if (showAmendQuoteForm) {
-      setAmendedCleaningServices({...cleaningServices});
       setAmendedCleaningContext(cleaningContext);
     }
   }, [showAmendQuoteForm]);
-
-  // Handle checkbox change for amended services
-  const handleAmendedServiceChange = (e) => {
-    const { name, checked } = e.target;
-    setAmendedCleaningServices(prev => ({
-      ...prev,
-      [name]: checked
-    }));
-  };
-
-  // Handle checkbox change
-  const handleServiceChange = (e) => {
-    const { name, checked } = e.target;
-    setCleaningServices(prev => ({
-      ...prev,
-      [name]: checked
-    }));
-  };
 
   // Load FFmpeg on component mount
   useEffect(() => {
@@ -222,16 +194,9 @@ function App() {
         formData.append('context', cleaningContext);
       }
 
-      // Add selected cleaning services to the request
-      formData.append('services', JSON.stringify(cleaningServices));
-
       // Log the request details
       console.log('Sending API request to:', API_URL);
       console.log('With context:', cleaningContext ? 'Yes' : 'No');
-      console.log('Selected services:', Object.entries(cleaningServices)
-        .filter(([_, selected]) => selected)
-        .map(([service]) => service)
-        .join(', '));
 
       const response = await fetch(API_URL, {
         method: 'POST',
@@ -340,16 +305,9 @@ function App() {
         formData.append('context', amendedCleaningContext);
       }
 
-      // Add amended selected cleaning services to the request
-      formData.append('services', JSON.stringify(amendedCleaningServices));
-
       // Log the request details
       console.log('Sending amended quote request to:', API_URL);
       console.log('With amended context:', amendedCleaningContext ? 'Yes' : 'No');
-      console.log('Amended selected services:', Object.entries(amendedCleaningServices)
-        .filter(([_, selected]) => selected)
-        .map(([service]) => service)
-        .join(', '));
 
       const response = await fetch(API_URL, {
         method: 'POST',
@@ -385,7 +343,6 @@ function App() {
       setQuoteId(data.quoteId || `QQ${Math.floor(Math.random() * 10000)}`);
 
       // Update the original services and context with the amended ones
-      setCleaningServices({...amendedCleaningServices});
       setCleaningContext(amendedCleaningContext);
 
       // Hide the amend form
@@ -517,7 +474,6 @@ function App() {
           quoteId,
           quoteText: analysis,
           userInfo,
-          cleaningServices,
           cleaningContext
         }),
       });
@@ -918,78 +874,6 @@ function App() {
                     <p className="context-helper">This information will help our AI provide a more accurate quote.</p>
                   </div>
 
-                  <div className="form-group">
-                    <label className="context-label" htmlFor="cleaning-services">
-                      Select Cleaning Services
-                    </label>
-                    <p className="context-helper mb-3">
-                      Select any additional cleaning services you'd like included in your quote, even if they're not shown in the video.
-                      This helps us provide a more accurate and comprehensive cleaning quote for your specific needs.
-                    </p>
-                    <div className="checkbox-group">
-                      <div className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          id="general-cleaning"
-                          name="generalCleaning"
-                          checked={cleaningServices.generalCleaning}
-                          onChange={handleServiceChange}
-                        />
-                        <label className="checkbox-label" htmlFor="general-cleaning">General Cleaning</label>
-                      </div>
-                      <div className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          id="deep-cleaning"
-                          name="deepCleaning"
-                          checked={cleaningServices.deepCleaning}
-                          onChange={handleServiceChange}
-                        />
-                        <label className="checkbox-label" htmlFor="deep-cleaning">Deep Cleaning</label>
-                      </div>
-                      <div className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          id="kitchen-bathroom"
-                          name="kitchenBathroom"
-                          checked={cleaningServices.kitchenBathroom}
-                          onChange={handleServiceChange}
-                        />
-                        <label className="checkbox-label" htmlFor="kitchen-bathroom">Kitchen & Bathroom Cleaning</label>
-                      </div>
-                      <div className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          id="floor-cleaning"
-                          name="floorCleaning"
-                          checked={cleaningServices.floorCleaning}
-                          onChange={handleServiceChange}
-                        />
-                        <label className="checkbox-label" htmlFor="floor-cleaning">Floor Cleaning</label>
-                      </div>
-                      <div className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          id="windows-cleaning"
-                          name="windowsCleaning"
-                          checked={cleaningServices.windowsCleaning}
-                          onChange={handleServiceChange}
-                        />
-                        <label className="checkbox-label" htmlFor="windows-cleaning">Windows Cleaning</label>
-                      </div>
-                      <div className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          id="organizing-decluttering"
-                          name="organizingDecluttering"
-                          checked={cleaningServices.organizingDecluttering}
-                          onChange={handleServiceChange}
-                        />
-                        <label className="checkbox-label" htmlFor="organizing-decluttering">Organizing & Decluttering</label>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="action-buttons">
                     <button
                       className="btn btn-primary"
@@ -1074,78 +958,6 @@ function App() {
                   onChange={(e) => setAmendedCleaningContext(e.target.value)}
                 ></textarea>
                 <p className="context-helper">This information will help our AI provide a more accurate quote.</p>
-              </div>
-
-              <div className="form-group">
-                <label className="context-label" htmlFor="amended-cleaning-services">
-                  Select Amended Cleaning Services
-                </label>
-                <p className="context-helper mb-3">
-                  Select any additional cleaning services you'd like included in your quote, even if they're not shown in the video.
-                  This helps us provide a more accurate and comprehensive cleaning quote for your specific needs.
-                </p>
-                <div className="checkbox-group">
-                  <div className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id="amended-general-cleaning"
-                      name="generalCleaning"
-                      checked={amendedCleaningServices.generalCleaning}
-                      onChange={handleAmendedServiceChange}
-                    />
-                    <label className="checkbox-label" htmlFor="amended-general-cleaning">General Cleaning</label>
-                  </div>
-                  <div className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id="amended-deep-cleaning"
-                      name="deepCleaning"
-                      checked={amendedCleaningServices.deepCleaning}
-                      onChange={handleAmendedServiceChange}
-                    />
-                    <label className="checkbox-label" htmlFor="amended-deep-cleaning">Deep Cleaning</label>
-                  </div>
-                  <div className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id="amended-kitchen-bathroom"
-                      name="kitchenBathroom"
-                      checked={amendedCleaningServices.kitchenBathroom}
-                      onChange={handleAmendedServiceChange}
-                    />
-                    <label className="checkbox-label" htmlFor="amended-kitchen-bathroom">Kitchen & Bathroom Cleaning</label>
-                  </div>
-                  <div className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id="amended-floor-cleaning"
-                      name="floorCleaning"
-                      checked={amendedCleaningServices.floorCleaning}
-                      onChange={handleAmendedServiceChange}
-                    />
-                    <label className="checkbox-label" htmlFor="amended-floor-cleaning">Floor Cleaning</label>
-                  </div>
-                  <div className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id="amended-windows-cleaning"
-                      name="windowsCleaning"
-                      checked={amendedCleaningServices.windowsCleaning}
-                      onChange={handleAmendedServiceChange}
-                    />
-                    <label className="checkbox-label" htmlFor="amended-windows-cleaning">Windows Cleaning</label>
-                  </div>
-                  <div className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      id="amended-organizing-decluttering"
-                      name="organizingDecluttering"
-                      checked={amendedCleaningServices.organizingDecluttering}
-                      onChange={handleAmendedServiceChange}
-                    />
-                    <label className="checkbox-label" htmlFor="amended-organizing-decluttering">Organizing & Decluttering</label>
-                  </div>
-                </div>
               </div>
 
               <div className="action-buttons">

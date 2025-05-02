@@ -113,20 +113,6 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
       console.log('Context content:', cleaningContext.substring(0, 100) + (cleaningContext.length > 100 ? '...' : ''));
     }
     
-    // Get selected cleaning services if provided
-    let selectedServices = {};
-    try {
-      if (req.body.services) {
-        selectedServices = JSON.parse(req.body.services);
-        console.log('Selected services:', Object.entries(selectedServices)
-          .filter(([_, selected]) => selected)
-          .map(([service]) => service)
-          .join(', '));
-      }
-    } catch (error) {
-      console.error('Error parsing services:', error);
-    }
-
     // Sort the images by filename to ensure they're in the correct order
     const sortedImages = [...req.files].sort((a, b) => {
       const aMatch = a.originalname.match(/frame_(\d+)/);
@@ -161,8 +147,8 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
       };
     });
 
-    // Construct the prompt with cleaning context and services
-    const promptText = formatPrompt(cleaningContext, selectedServices);
+    // Construct the prompt with cleaning context
+    const promptText = formatPrompt(cleaningContext);
     
     console.log('Sending request to OpenAI API...');
     
@@ -211,7 +197,7 @@ app.post('/api/analyze-images', imageUpload.array('images', 50), async (req, res
 // API endpoint for saving quotes
 app.post('/api/save-quote', express.json(), async (req, res) => {
   try {
-    const { quoteId, quoteText, userInfo, cleaningServices, cleaningContext } = req.body;
+    const { quoteId, quoteText, userInfo } = req.body;
     
     // Validate all required fields are present
     if (!quoteId || !quoteText) {
@@ -245,8 +231,6 @@ app.post('/api/save-quote', express.json(), async (req, res) => {
           quoteId,
           timestamp: new Date().toISOString(),
           userInfo,
-          cleaningServices: cleaningServices || {},
-          cleaningContext: cleaningContext || '',
           analysis: quoteText,
           estimatedPrice
         };
