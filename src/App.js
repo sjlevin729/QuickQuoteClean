@@ -74,6 +74,7 @@ function App() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const uploadRef = useRef(null);
   const extractedImagesRef = useRef([]);
+  const [processingStep, setProcessingStep] = useState('');
   const [userInfo, setUserInfo] = useState({
     name: '',
     email: '',
